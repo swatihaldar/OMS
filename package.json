@@ -1,0 +1,21 @@
+{
+  "name": "oms",
+  "version": "1.0.0",
+  "description": "The app for maintain OMS",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "cd frontend && yarn install",
+    "dev": "cd frontend && yarn dev",
+    "build": "cd frontend && yarn build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@heroicons/vue": "^2.2.0",
+    "@vueup/vue-quill": "^1.2.0",
+    "chart.js": "^4.4.8",
+    "lucide-vue-next": "^0.476.0"
+  }
+}

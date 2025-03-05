@@ -1,0 +1,318 @@
+<template>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm">
+      <div class="px-4 py-3 flex items-center max-w-5xl mx-auto">
+        <button @click="$router.back()" class="mr-2 hover:bg-gray-100 rounded-full p-1.5 transition-colors">
+          <ChevronLeftIcon class="h-6 w-6 text-gray-600" />
+        </button>
+        <h1 class="text-xl font-semibold">Profile</h1>
+      </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+      <!-- Profile Info -->
+      <div class="bg-white mt-2 px-6 py-8 flex flex-col items-center rounded-lg shadow-sm">
+        <div class="relative">
+          <div class="h-28 w-28 rounded-full bg-gray-200 overflow-hidden shadow-md">
+            <img v-if="userData && userData.user_image" :src="getUserImage(userData.user_image)" :alt="userData.full_name" class="h-full w-full object-cover" />
+            <div v-else class="h-full w-full flex items-center justify-center bg-blue-100 text-blue-600 font-semibold text-3xl">
+              {{ getInitials(userData?.full_name) }}
+            </div>
+          </div>
+        </div>
+        <h2 class="mt-4 text-2xl font-semibold">{{ userData?.full_name }}</h2>
+        <p class="text-gray-600">{{ employeeData?.designation || 'No Designation' }}</p>
+        
+        <div class="mt-4 flex items-center text-sm text-gray-500">
+          <EnvelopeIcon class="h-4 w-4 mr-1" />
+          <span>{{ userData?.name || 'No Email' }}</span>
+        </div>
+      </div>
+
+      <!-- Menu Items -->
+      <div class="bg-white mt-4 rounded-lg shadow-sm overflow-hidden">
+        <button 
+          @click="activeSheet = 'employee'" 
+          class="w-full px-6 py-4 flex items-center justify-between border-b hover:bg-gray-50 transition-colors"
+        >
+          <div class="flex items-center">
+            <UserIcon class="h-5 w-5 text-blue-500 mr-3" />
+            <span class="font-medium">Employee Details</span>
+          </div>
+          <ChevronRightIcon class="h-5 w-5 text-gray-400" />
+        </button>
+        
+        <button 
+          @click="activeSheet = 'company'" 
+          class="w-full px-6 py-4 flex items-center justify-between border-b hover:bg-gray-50 transition-colors"
+        >
+          <div class="flex items-center">
+            <BuildingOfficeIcon class="h-5 w-5 text-green-500 mr-3" />
+            <span class="font-medium">Company Information</span>
+          </div>
+          <ChevronRightIcon class="h-5 w-5 text-gray-400" />
+        </button>
+        
+        <button 
+          @click="activeSheet = 'contact'" 
+          class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <div class="flex items-center">
+            <PhoneIcon class="h-5 w-5 text-purple-500 mr-3" />
+            <span class="font-medium">Contact Information</span>
+          </div>
+          <ChevronRightIcon class="h-5 w-5 text-gray-400" />
+        </button>
+      </div>
+
+      <!-- Log Out Button -->
+      <div class="px-4 mt-6 mb-8">
+        <button 
+          @click="handleLogout();" 
+          class="w-full bg-white text-red-600 font-medium py-4 rounded-lg border border-red-200 shadow-sm hover:bg-red-50 transition-colors flex items-center justify-center"
+        >
+          <ArrowRightOnRectangleIcon class="h-5 w-5 mr-2" />
+          Log Out
+        </button>
+      </div>
+    </div>
+
+    <!-- Employee Details Bottom Sheet -->
+    <BottomSheet 
+      v-model="showEmployeeSheet" 
+      title="Employee Details"
+      :full-screen="isMobile"
+    >
+      <div class="space-y-4">
+        <div v-for="(value, key) in employeeDetails" :key="key" class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">{{ formatLabel(key) }}</p>
+          <p class="font-medium text-gray-800">{{ value || 'Not specified' }}</p>
+        </div>
+      </div>
+    </BottomSheet>
+
+    <!-- Company Information Bottom Sheet -->
+    <BottomSheet 
+      v-model="showCompanySheet" 
+      title="Company Information"
+      :full-screen="isMobile"
+    >
+      <div class="space-y-4">
+        <div v-for="(value, key) in companyInfo" :key="key" class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">{{ formatLabel(key) }}</p>
+          <p class="font-medium text-gray-800">{{ value || 'Not specified' }}</p>
+        </div>
+      </div>
+    </BottomSheet>
+
+    <!-- Contact Information Bottom Sheet -->
+    <BottomSheet 
+      v-model="showContactSheet" 
+      title="Contact Information"
+      :full-screen="isMobile"
+    >
+      <div class="space-y-4">
+        <div v-for="(value, key) in contactInfo" :key="key" class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">{{ formatLabel(key) }}</p>
+          <p class="font-medium text-gray-800">{{ value || 'Not specified' }}</p>
+        </div>
+      </div>
+    </BottomSheet>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { 
+  ChevronLeftIcon, 
+  UserIcon, 
+  BuildingOfficeIcon, 
+  PhoneIcon, 
+  ChevronRightIcon,
+  EnvelopeIcon,
+  ArrowRightOnRectangleIcon
+} from '@heroicons/vue/24/outline';
+import BottomSheet from '../components/BottomSheet.vue';
+
+const userData = ref(null);
+const employeeData = ref(null);
+const activeSheet = ref(null);
+const isMobile = ref(window.innerWidth < 768);
+
+const employeeDetails = ref({});
+const companyInfo = ref({});
+const contactInfo = ref({});
+
+// Computed properties to control bottom sheet visibility
+const showEmployeeSheet = computed({
+  get: () => activeSheet.value === 'employee',
+  set: (value) => {
+    if (!value) activeSheet.value = null;
+  }
+});
+
+const showCompanySheet = computed({
+  get: () => activeSheet.value === 'company',
+  set: (value) => {
+    if (!value) activeSheet.value = null;
+  }
+});
+
+const showContactSheet = computed({
+  get: () => activeSheet.value === 'contact',
+  set: (value) => {
+    if (!value) activeSheet.value = null;
+  }
+});
+
+const getInitials = (name) => {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+};
+
+const formatLabel = (key) => {
+  return key
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// const confirmLogout = () => {
+//   if (confirm('Are you sure you want to log out?')) {
+//     handleLogout();
+//   }
+// };
+
+const handleLogout = async () => {
+  try {
+    await fetch('/api/method/logout');
+    window.location.href = '/account/login';
+  } catch (error) {
+    console.error('Error logging out:', error);
+  }
+};
+
+const getUserImage = (imagePath) => {
+  if (!imagePath) return '';
+  if (imagePath.startsWith('/private/files')) {
+    return `/api/method/frappe.utils.file_manager.download_file?file_url=${imagePath}`;
+  }
+  return imagePath; 
+};
+
+// Handle window resize for responsive design
+const handleResize = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
+onMounted(async () => {
+  // Add resize event listener
+  window.addEventListener('resize', handleResize);
+  
+  try {
+    // Fetch user info
+    const userResponse = await fetch('/api/method/oms.api.get_current_user_info');
+    const userDataResponse = await userResponse.json();
+    
+    if (userDataResponse.message) {
+      userData.value = userDataResponse.message;
+      
+      // Fetch employee data
+      const employeeResponse = await fetch('/api/method/frappe.client.get_list', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          doctype: 'Employee',
+          filters: { user_id: userData.value.name },
+          fields: ['*']
+        }),
+      });
+      
+      const employeeDataResponse = await employeeResponse.json();
+      
+      if (employeeDataResponse.message?.[0]) {
+        const employee = employeeDataResponse.message[0];
+        employeeData.value = employee;
+        
+        // Organize data for different sections
+        employeeDetails.value = {
+          first_name: employee.first_name,
+          middle_name: employee.middle_name,
+          last_name: employee.last_name,
+          gender: employee.gender,
+          date_of_birth: formatDate(employee.date_of_birth),
+          date_of_joining: formatDate(employee.date_of_joining),
+          employee_number: employee.employee_number,
+          status: employee.status
+        };
+        
+        companyInfo.value = {
+          company: employee.company,
+          department: employee.department,
+          designation: employee.designation,
+          grade: employee.grade,
+          branch: employee.branch,
+          reports_to: employee.reports_to,
+        };
+        
+        // Fetch contact information
+        const contactResponse = await fetch('/api/method/frappe.client.get_list', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            doctype: 'Contact',
+            filters: { user: userData.value.name },
+            fields: ['*']
+          }),
+        });
+        
+        const contactDataResponse = await contactResponse.json();
+        
+        if (contactDataResponse.message?.[0]) {
+          const contact = contactDataResponse.message[0];
+          contactInfo.value = {
+            email: contact.email_id,
+            phone: contact.phone,
+            mobile_no: contact.mobile_no,
+            company_name: contact.company_name,
+          };
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching profile data:', error);
+  }
+});
+
+// Format date for better display
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } catch (e) {
+    return dateString;
+  }
+};
+
+// Clean up event listener
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
+});
+</script>
+
