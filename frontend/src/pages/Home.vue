@@ -3,7 +3,7 @@
     <!-- Header Section -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-4 max-w-7xl mx-auto">
       <h2 class="text-2xl font-bold text-gray-800">Hey, {{ userName }}</h2>
-      <p class="text-gray-600 mt-2">Welcome to Frappe OMS</p>
+      <p class="text-gray-600 mt-2">Welcome to OMS</p>
     </div>
     
     <div class="max-w-7xl mx-auto px-4 py-6">

@@ -69,12 +69,37 @@
       <!-- Log Out Button -->
       <div class="px-4 mt-6 mb-8">
         <button 
-          @click="handleLogout();" 
-          class="w-full bg-white text-red-600 font-medium py-4 rounded-lg border border-red-200 shadow-sm hover:bg-red-50 transition-colors flex items-center justify-center"
+          @click="confirmLogout" 
+          class="w-full bg-white text-red-600 font-medium py-4 rounded-lg border border-red-200 shadow-sm hover:bg-red-50 transition-colors flex items-center justify-center relative overflow-hidden group"
         >
-          <ArrowRightOnRectangleIcon class="h-5 w-5 mr-2" />
-          Log Out
+          <span class="absolute inset-0 w-3 bg-red-100 transition-all duration-300 ease-out group-hover:w-full"></span>
+          <span class="relative flex items-center">
+            <ArrowRightOnRectangleIcon class="h-5 w-5 mr-2" />
+            Log Out
+          </span>
         </button>
+      </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div v-if="showLogoutConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg max-w-sm w-full p-6 shadow-xl">
+        <h3 class="text-lg font-medium text-gray-900 mb-3">Confirm Logout</h3>
+        <p class="text-gray-600 mb-5">Are you sure you want to log out of your account?</p>
+        <div class="flex justify-end space-x-3">
+          <button 
+            @click="showLogoutConfirm = false" 
+            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            @click="handleLogout" 
+            class="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </div>
 
@@ -139,6 +164,7 @@ const userData = ref(null);
 const employeeData = ref(null);
 const activeSheet = ref(null);
 const isMobile = ref(window.innerWidth < 768);
+const showLogoutConfirm = ref(false);
 
 const employeeDetails = ref({});
 const companyInfo = ref({});
@@ -183,16 +209,14 @@ const formatLabel = (key) => {
     .join(' ');
 };
 
-// const confirmLogout = () => {
-//   if (confirm('Are you sure you want to log out?')) {
-//     handleLogout();
-//   }
-// };
+const confirmLogout = () => {
+  showLogoutConfirm.value = true;
+};
 
 const handleLogout = async () => {
   try {
     await fetch('/api/method/logout');
-    window.location.href = '/account/login';
+    window.location.href = '/oms/account/login';
   } catch (error) {
     console.error('Error logging out:', error);
   }
@@ -315,4 +339,3 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 </script>
-
