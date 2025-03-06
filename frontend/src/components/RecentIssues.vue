@@ -85,11 +85,9 @@ const viewIssue = (issueId) => {
 
 onMounted(async () => {
   try {
-    // Get current user
     const userResponse = await fetch('/api/method/frappe.auth.get_logged_user');
     const userData = await userResponse.json();
     if (userData.message) {
-      // Fetch recent issues for current user
       const response = await fetch('/api/method/frappe.client.get_list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

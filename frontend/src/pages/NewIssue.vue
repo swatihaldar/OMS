@@ -273,39 +273,7 @@ const removeFile = (type) => {
   }
 };
 
-// const submitIssue = async () => {
-//   try {
-//     submitting.value = true;
-    
-//     // Set the raised_by field to current user
-//     formData.value.raised_by = currentUser.value;
-    
-//     const response = await fetch('/api/method/frappe.client.insert', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({
-//         doc: {
-//           doctype: 'Issue',
-//           ...formData.value
-//         }
-//       })
-//     });
 
-//     const data = await response.json();
-//     if (data.message) {
-//       router.push(`/issue/${data.message.name}`);
-//     }
-//   } catch (error) {
-//     console.error('Error creating issue:', error);
-//     alert('Error creating issue. Please try again.');
-//   } finally {
-//     submitting.value = false;
-//   }
-// };
-
-// In the submitIssue function of NewIssue.vue
 const submitIssue = async () => {
   try {
     submitting.value = true;
@@ -314,7 +282,7 @@ const submitIssue = async () => {
     if (formData.value.custom_issue_image) {
       const imageFormData = new FormData();
       imageFormData.append('file', formData.value.custom_issue_image);
-      imageFormData.append('is_private', 0); // Set to non-private
+      imageFormData.append('is_private', 0); 
       imageFormData.append('doctype', 'Issue');
       
       const imageResponse = await fetch('/api/method/upload_file', {
@@ -331,7 +299,7 @@ const submitIssue = async () => {
     if (formData.value.custom_other_attachment) {
       const attachmentFormData = new FormData();
       attachmentFormData.append('file', formData.value.custom_other_attachment);
-      attachmentFormData.append('is_private', 0); // Set to non-private
+      attachmentFormData.append('is_private', 0); 
       attachmentFormData.append('doctype', 'Issue');
       
       const attachmentResponse = await fetch('/api/method/upload_file', {
@@ -373,13 +341,11 @@ const submitIssue = async () => {
 
 onMounted(async () => {
   try {
-    // Get current user
     const userResponse = await fetch('/api/method/frappe.auth.get_logged_user');
     const userData = await userResponse.json();
     if (userData.message) {
       currentUser.value = userData.message;
       
-      // Get user's permitted projects
       const userPermissionsResponse = await fetch('/api/method/frappe.client.get_list', {
         method: 'POST',
         headers: {
@@ -397,12 +363,10 @@ onMounted(async () => {
       
       const userPermissionsData = await userPermissionsResponse.json();
       
-      // If user has project permissions
+
       if (userPermissionsData.message && userPermissionsData.message.length > 0) {
-        // Get project details for permitted projects
         const projectNames = userPermissionsData.message.map(p => p.for_value);
         
-        // Find default project if any
         const defaultProject = userPermissionsData.message.find(p => p.is_default === 1);
         
         const projectsResponse = await fetch('/api/method/frappe.client.get_list', {
@@ -424,16 +388,13 @@ onMounted(async () => {
         if (projectsData.message) {
           projects.value = projectsData.message;
           
-          // Set default project if available
           if (defaultProject) {
             formData.value.project = defaultProject.for_value;
           } else if (projects.value.length === 1) {
-            // If only one project is available, select it
             formData.value.project = projects.value[0].name;
           }
         }
       } else {
-        // If no specific permissions, fetch all active projects
         const projectsResponse = await fetch('/api/method/frappe.client.get_list', {
           method: 'POST',
           headers: {
@@ -491,12 +452,11 @@ onMounted(async () => {
   font-weight: normal !important;
 }
 
-/* Override any default bold styling */
+
 .ql-editor * {
   font-weight: inherit !important;
 }
 
-/* Only apply bold when specifically styled */
 .ql-editor strong, .ql-editor b {
   font-weight: bold !important;
 }

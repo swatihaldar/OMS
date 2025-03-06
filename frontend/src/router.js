@@ -35,12 +35,6 @@ const routes = [
     component: () => import('@/pages/IssueDetails.vue')
     
   },
-  {
-    name: 'EditIssue',
-    path: '/issues/edit/:id',
-    component: () => import('@/pages/EditIssue.vue')
-    
-  }
 ]
 
 let router = createRouter({
@@ -48,33 +42,15 @@ let router = createRouter({
   routes,
 })
 
-// router.beforeEach(async (to, from, next) => {
-//   let isLoggedIn = session.isLoggedIn
-//   try {
-//     await userResource.promise
-//   } catch (error) {
-//     isLoggedIn = false
-//   }
-
-//   if (to.name === 'Login' && isLoggedIn) {
-//     next({ name: 'Home' })
-//   } else if (to.name !== 'Login' && !isLoggedIn) {
-//     next({ name: 'Login' })
-//   } else {
-//     next()
-//   }
-// })
 
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     try {
-      // Check if user is logged in
       const response = await fetch("/api/method/frappe.auth.get_logged_user")
       const data = await response.json()
 
       if (!data.message) {
-        // Redirect to login if not logged in
         return next({ path: "/account/login", query: { redirect: to.fullPath } })
       }
     } catch (error) {

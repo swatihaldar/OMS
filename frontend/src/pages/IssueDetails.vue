@@ -9,20 +9,14 @@
           </button>
           <h2 class="text-xl font-semibold">Issue Details</h2>
         </div>
-        <!-- <button
-          @click="$router.push(`/issues/edit/${issue.name}`)"
-          class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Edit Issue
-        </button> -->
       </div>
 
-      <!-- Loading State -->
+ 
       <div v-if="loading" class="flex justify-center items-center h-64">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
 
-      <!-- Issue Content -->
+
       <div v-else-if="issue" class="space-y-6">
         <!-- Basic Info Card -->
         <div class="bg-white rounded-xl shadow-sm p-6">

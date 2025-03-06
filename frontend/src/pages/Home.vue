@@ -50,7 +50,6 @@ const recentIssues = ref([]);
 
 onMounted(async () => {
   try {
-    // Fetch user data
     const response = await fetch('/api/method/oms.api.get_current_user_info');
     const data = await response.json();
     
@@ -58,7 +57,6 @@ onMounted(async () => {
       userName.value = data.message.full_name || 'User';
     }
 
-    // Fetch issue statistics
     const issueStatsResponse = await fetch('/api/method/frappe.client.get_list', {
       method: 'POST',
       headers: {
@@ -87,7 +85,6 @@ onMounted(async () => {
       });
     }
     
-    // Fetch recent issues
     const recentIssuesResponse = await fetch('/api/method/frappe.client.get_list', {
       method: 'POST',
       headers: {

@@ -28,7 +28,6 @@
           </span>
         </button>
 
-        <!-- Add New Button  -->
         <button @click="$router.push('/issue/new')" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
         <PlusIcon class="h-5 w-5 mr-1" />
         New
@@ -70,8 +69,6 @@
           </div>
         </div>
 
-
-  
 
         <!-- Column Visibility -->
         <!-- <div>
@@ -317,16 +314,15 @@ const nextPage = () => {
   }
 };
 
-// Fetch issues with filters
+
 const fetchIssues = async () => {
   loading.value = true;
   try {
-    // First get current user info
     const userResponse = await fetch('/api/method/oms.api.get_current_user_info');
     const userData = await userResponse.json();
     currentUser.value = userData.message;
 
-    // Then fetch issues for current user
+
     const response = await fetch('/api/method/frappe.client.get_list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -343,7 +339,7 @@ const fetchIssues = async () => {
           'creation'
         ],
         filters: {
-          raised_by: currentUser.value.name, // Filter by current user
+          raised_by: currentUser.value.name, 
           ...(filters.value.status && { status: filters.value.status }),
         },
         limit_start: (currentPage.value - 1) * pageSize,
@@ -356,7 +352,7 @@ const fetchIssues = async () => {
     
     if (data.message) {
       issues.value = data.message;
-      // Calculate total pages
+  
       const totalResponse = await fetch('/api/method/frappe.client.get_list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -381,9 +377,9 @@ const fetchIssues = async () => {
   }
 };
 
-// Watch for filter changes
+
 watch([filters, sortBy], () => {
-  currentPage.value = 1; // Reset to first page when filters change
+  currentPage.value = 1; 
   fetchIssues();
 });
 
@@ -391,11 +387,10 @@ const applyFilters = () => {
   fetchIssues();
 };
 
-// Initialize
+
 onMounted(() => {
   fetchIssues();
   
-  // Close filter panel when clicking outside
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.filter-panel') && !e.target.closest('button')) {
       showFilterPanel.value = false;

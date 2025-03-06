@@ -2,12 +2,9 @@
   <div class="bg-white shadow-md px-4 py-3 flex justify-between items-center">
     <h1 class="text-xl font-bold text-gray-800">{{ pageTitle }}</h1>
     
-    <!-- Right Section -->
     <div class="flex items-center space-x-4">
-      <!-- Notification Bell Icon (No Count) -->
       <BellIcon class="h-6 w-6 text-gray-600" />
 
-      <!-- Profile Icon (Direct Navigation) -->
       <button @click="goToProfile" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500">
         <img v-if="userData && userData.user_image" :src="getUserImage(userData.user_image)" :alt="userData.full_name" class="h-full w-full object-cover" />
         <div v-else class="h-full w-full flex items-center justify-center bg-blue-100 text-blue-600 font-medium text-lg">
@@ -35,13 +32,11 @@ const goToProfile = () => {
   router.push('/profile');
 };
 
-// Function to extract initials from name
 const getInitials = (name) => {
   if (!name) return '';
   return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
 };
 
-// Function to handle private file URLs in Frappe
 const getUserImage = (imagePath) => {
   if (!imagePath) return '';
   if (imagePath.startsWith('/private/files')) {
@@ -52,7 +47,6 @@ const getUserImage = (imagePath) => {
 
 onMounted(async () => {
   try {
-    // Fetch user data
     const response = await fetch('/api/method/oms.api.get_current_user_info');
     const data = await response.json();
 

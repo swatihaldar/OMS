@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white border-t border-gray-200 flex justify-around items-center h-16">
+  <div class="bg-white border-t border-gray-200 flex justify-around items-center h-16 mb-1">
     <router-link to="/" class="flex flex-col items-center justify-center w-full h-full" active-class="text-blue-600">
       <HomeIcon class="h-6 w-6" />
       <span class="text-xs mt-1">Home</span>
