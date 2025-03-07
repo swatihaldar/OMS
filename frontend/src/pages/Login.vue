@@ -94,12 +94,6 @@
                 Remember me
               </label>
             </div>
-
-            <!-- <div class="text-sm">
-              <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
-                Forgot your password?
-              </a>
-            </div> -->
           </div>
 
           <div>
@@ -161,6 +155,10 @@ const handleSubmit = async () => {
   errorMessage.value = '';
   
   try {
+    if (!email.value || !password.value) {
+      throw new Error('Please enter both user ID and password');
+    }
+    
     const response = await fetch('/api/method/login', {
       method: 'POST',
       headers: {
@@ -173,16 +171,16 @@ const handleSubmit = async () => {
     });
 
     const data = await response.json();
-
-    if (data.message === 'Logged In') {
+    
+    if (response.ok && data.message === 'Logged In') {
       // Redirect to home page
       router.push('/');
     } else {
-      throw new Error(data.message || 'Login failed');
+      throw new Error(data.message || 'Invalid username or password');
     }
   } catch (error) {
     console.error('Login error:', error);
-    errorMessage.value = error.message || 'Invalid username or password. Please try again.';
+    errorMessage.value = error.message || 'Login failed. Please try again.';
   } finally {
     loading.value = false;
   }
