@@ -26,12 +26,10 @@
   <script setup>
   import { XMarkIcon } from '@heroicons/vue/24/outline';
 
-
-  
   const emit = defineEmits(['close']);
   
   const handleBackdropClick = (event) => {
-    // Close modal when clicking outside
+  
     if (event.target === event.currentTarget) {
       emit('close');
     }
