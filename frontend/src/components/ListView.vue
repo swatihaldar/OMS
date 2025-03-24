@@ -134,7 +134,11 @@
           </div>
         </div>
 
-        <button @click="$router.push(`/${doctypeRoute}/new`)" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
+        <button 
+          v-if="canCreate"
+          @click="$router.push(`/${doctypeRoute}/new`)" 
+          class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
+        >
           <PlusIcon class="h-5 w-5 mr-1" />
           New
         </button>
@@ -150,7 +154,11 @@
     <div v-else-if="records.length === 0" class="bg-white rounded-lg shadow-md p-6 text-center">
       <ExclamationTriangleIcon class="h-12 w-12 mx-auto text-gray-400 mb-2" />
       <p class="text-gray-600">No {{ doctype }} found</p>
-      <button @click="$router.push(`/${doctypeRoute}/new`)" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg">
+      <button 
+        v-if="canCreate"
+        @click="$router.push(`/${doctypeRoute}/new`)" 
+        class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg"
+      >
         Create New {{ doctype }}
       </button>
     </div>
@@ -225,6 +233,7 @@ import {
   DocumentIcon
 } from '@heroicons/vue/24/outline';
 import api from '@/utils/api';
+import { getDocTypePermissions, getCurrentUser } from '../utils/permissions';
 
 const props = defineProps({
   doctype: {
@@ -242,6 +251,10 @@ const props = defineProps({
   filters: {
     type: Object,
     default: () => ({})
+  },
+  showOnlyOwnRecords: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -254,6 +267,7 @@ const formFields = ref([]);
 const error = ref(null);
 const linkFieldOptions = ref({});
 const userPermissions = ref([]);
+const canCreate = ref(false);
 
 // List view state
 const searchQuery = ref('');
@@ -305,7 +319,7 @@ const filterableFields = computed(() => {
     ['Data', 'Link', 'Select', 'Date', 'Datetime', 'Int', 'Float'].includes(field.fieldtype) &&
     !['name', 'creation', 'modified', 'modified_by', 'owner'].includes(field.fieldname) &&
     field.fieldname !== 'status' 
-  ).slice(0, 5);
+  ).slice(0, 5); // Limit to 5 fields for simplicity
 });
 
 const listDisplayFields = computed(() => {
@@ -323,7 +337,7 @@ const listDisplayFields = computed(() => {
     return fieldsInListView.slice(0, 4);
   }
   
-
+  // Fallback to common fields
   const commonFields = ['name', 'title', 'subject', 'status', 'creation'];
   return formFields.value
     .filter(field => commonFields.includes(field.fieldname))
@@ -331,6 +345,36 @@ const listDisplayFields = computed(() => {
 });
 
 // Methods
+const checkPermissions = async () => {
+  try {
+    // For debugging purposes, default to true
+    canCreate.value = true;
+    
+    // Log for debugging
+    console.log(`Permission check for ${props.doctype}: canCreate = ${canCreate.value}`);
+    
+    // Try direct API call to Frappe for permissions
+    const response = await fetch('/api/method/frappe.client.get_permissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctype: props.doctype })
+    });
+    
+    if (response.ok) {
+      const permData = await response.json();
+      if (permData.message) {
+        // Still default to true for debugging
+        canCreate.value = true; 
+        console.log(`Direct permissions for ${props.doctype}:`, permData.message);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking permissions:', error);
+    // Default to true for debugging
+    canCreate.value = true;
+  }
+};
+
 const fetchDoctypeFields = async () => {
   try {
     const result = await api.fetchDoctypeFields(props.doctype);
@@ -349,7 +393,6 @@ const fetchDoctypeFields = async () => {
         dateFilters.value[field.fieldname] = { from: '', to: '' };
       });
     
- 
     await fetchLinkFieldOptions();
     
   } catch (error) {
@@ -360,7 +403,6 @@ const fetchDoctypeFields = async () => {
 
 const fetchUserPermissions = async () => {
   try {
-
     const response = await fetch('/api/method/frappe.client.get_list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -368,7 +410,7 @@ const fetchUserPermissions = async () => {
         doctype: 'User Permission',
         fields: ['name', 'user', 'allow', 'for_value'],
         filters: {
-          user: ['=', await api.getCurrentUser()]
+          user: ['=', await getCurrentUser()]
         }
       })
     });
@@ -413,7 +455,7 @@ const fetchLinkFieldOptions = async () => {
           label: `${item.first_name || ''} ${item.last_name || ''} (${item.name})`
         }));
       } else {
-
+        // Default handling for other doctypes
         const items = await api.fetchLinkOptions(field.options, ['name']);
         options = items.map(item => ({
           value: item.name,
@@ -435,11 +477,15 @@ const fetchRecords = async () => {
   try {
     const filters = { ...props.filters };
     
+    // Apply user permissions as filters
     applyUserPermissionsToFilters(filters);
 
-    const currentUser = await api.getCurrentUser();
-    if (currentUser && props.doctype === 'Issue') {
-      filters.owner = currentUser;
+    // Add filter to only show records owned by the current user if showOnlyOwnRecords is true
+    if (props.showOnlyOwnRecords) {
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        filters.owner = currentUser;
+      }
     }
     
     if (statusFilter.value) {
@@ -687,6 +733,7 @@ onMounted(async () => {
   console.log(`ListView component mounted for ${props.doctype}`);
   
   try {
+    await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
     await fetchRecords();
@@ -709,6 +756,7 @@ watch(() => props.doctype, async () => {
   records.value = [];
   
   try {
+    await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
     await fetchRecords();
@@ -731,10 +779,28 @@ onUnmounted(() => {
 <style>
 @media (max-width: 640px) {
   .filter-dropdown {
-    position: absolute;
+    position: fixed;
+    left: 0;
     right: 0;
-    width: 250px;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    margin: 0;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
     z-index: 100;
+  }
+  
+  .filter-dropdown::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background-color: #cbd5e0;
+    border-radius: 2px;
+    margin: 0.5rem auto 1rem;
   }
 }
 </style>

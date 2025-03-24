@@ -1,499 +1,559 @@
-const API_ENDPOINTS = {
-  GET_LIST: '/api/method/frappe.client.get_list',
-  GET_DOC: '/api/method/frappe.client.get_doc',
-  GET: '/api/method/frappe.client.get',
-  INSERT: '/api/method/frappe.client.insert',
-  SAVE: '/api/method/frappe.client.save',
-  UPDATE: '/api/method/frappe.client.set_value',
-  DELETE: '/api/method/frappe.client.delete',
-  UPLOAD: '/api/method/upload_file',
-  GET_DOCTYPE_FIELDS: '/api/method/frappe.desk.form.load.getdoctype',
-  CUSTOM_GET_FIELDS: '/api/method/oms.api.get_doctype_fields',
-  GET_CLIENT_SCRIPTS: '/api/method/frappe.client.get_list',
-  GET_LOGGED_USER: '/api/method/frappe.auth.get_logged_user',
-  GET_USER_PERMISSIONS: '/api/method/frappe.client.get_list'
-};
-
 /**
- * Fetch doctype fields with metadata
- * @param {string} doctype 
- * @returns {Promise<Array|Object>} 
+ * API utility functions for Frappe
  */
 
-export async function fetchDoctypeFields(doctype) {
+// Cache for API responses
+const apiCache = {
+  doctypeFields: {},
+  linkOptions: {},
+  clientScripts: {},
+}
+
+/**
+ * Get the current logged-in user
+ * @returns {Promise<string>} - The username of the current user
+ */
+async function getCurrentUser() {
   try {
-    console.log(`Fetching doctype fields for ${doctype}...`);
-    
-    // First try using custom API endpoint
+    const response = await fetch("/api/method/frappe.auth.get_logged_user")
+    const data = await response.json()
+    return data.message || null
+  } catch (error) {
+    console.error("Error getting current user:", error)
+    return null
+  }
+}
+
+/**
+ * Fetch user roles for the current user
+ * @returns {Promise<Array>} - Array of role names
+ */
+async function fetchUserRoles() {
+  try {
+    const response = await fetch("/api/method/frappe.client.get_list", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        doctype: "Has Role",
+        fields: ["role"],
+        filters: {
+          parenttype: "User",
+          parent: await getCurrentUser(),
+        },
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      return data.message.map((item) => item.role)
+    }
+
+    return []
+  } catch (error) {
+    console.error("Error fetching user roles:", error)
+    return []
+  }
+}
+
+/**
+ * Fetch user permissions for the current user
+ * @returns {Promise<Array>} - Array of user permission objects
+ */
+async function fetchUserPermissions() {
+  try {
+    const response = await fetch("/api/method/frappe.client.get_list", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        doctype: "User Permission",
+        fields: ["name", "allow", "for_value", "apply_to_all_doctypes", "applicable_for"],
+        filters: {
+          user: await getCurrentUser(),
+        },
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      return data.message
+    }
+
+    return []
+  } catch (error) {
+    console.error("Error fetching user permissions:", error)
+    return []
+  }
+}
+
+/**
+ * Fetch permissions for a doctype
+ * @param {string} doctype - The doctype name
+ * @returns {Promise<Array>} - Array of permission objects
+ */
+async function fetchDocPermissions(doctype) {
+  try {
+    const response = await fetch("/api/method/frappe.client.get_list", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        doctype: "DocPerm",
+        fields: [
+          "name",
+          "role",
+          "permlevel",
+          "read",
+          "write",
+          "create",
+          "delete",
+          "submit",
+          "cancel",
+          "amend",
+          "report",
+          "import",
+          "export",
+          "print",
+          "email",
+          "share",
+          "if_owner",
+        ],
+        filters: {
+          parent: doctype,
+        },
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      return data.message
+    }
+
+    return []
+  } catch (error) {
+    console.error(`Error fetching permissions for ${doctype}:`, error)
+    return []
+  }
+}
+
+/**
+ * Fetch fields for a doctype
+ * @param {string} doctype - The doctype name
+ * @returns {Promise<Array>} - Array of field objects
+ */
+async function fetchDoctypeFields(doctype) {
+  // Check cache first
+  if (apiCache.doctypeFields[doctype]) {
+    return apiCache.doctypeFields[doctype]
+  }
+
+  try {
+    console.log(`Fetching doctype fields for ${doctype}...`)
+
     try {
-      const response = await fetch(API_ENDPOINTS.CUSTOM_GET_FIELDS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ doctype })
-      });
-      
-      const data = await response.json();
-      
+      const response = await fetch("/api/method/oms.api.get_doctype_fields", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          doctype: doctype,
+        }),
+      })
+
+      const data = await response.json()
+
       if (data.message && Array.isArray(data.message) && data.message.length > 0) {
-        console.log(`Successfully fetched ${data.message.length} fields using custom API`);
-        return data.message;
+        apiCache.doctypeFields[doctype] = data.message
+        console.log(`Successfully fetched ${data.message.length} fields using custom API`)
+        return data.message
       } else {
-        console.log('Custom API returned no fields, falling back to standard API');
+        console.log("Custom API returned no fields, falling back to standard API")
       }
     } catch (error) {
-      console.error('Error using custom API, falling back to standard API:', error);
+      console.error("Error using custom API, falling back to standard API:", error)
     }
-    
+
     // Fallback to standard Frappe API
-    const response = await fetch(API_ENDPOINTS.GET_DOCTYPE_FIELDS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ doctype })
-    });
-    
-    const data = await response.json();
-    
+    const response = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        doctype: doctype,
+      }),
+    })
+
+    const data = await response.json()
+
     if (data.message && data.message.docs && data.message.docs[0]) {
-      const doctypeDef = data.message.docs[0];
-      console.log(`Successfully fetched ${doctypeDef.fields.length} fields using standard API`);
-      
+      // Get the doctype definition
+      const doctypeDef = data.message.docs[0]
 
-      const processedFields = doctypeDef.fields.map(field => {
-        if (field.in_list_view === '1' || field.in_list_view === 1) {
-          field.in_list_view = true;
-        } else {
-          field.in_list_view = false;
-        }
-        
-        if (field.in_standard_filter === '1' || field.in_standard_filter === 1) {
-          field.in_standard_filter = true;
-        } else {
-          field.in_standard_filter = false;
-        }
-        
-        return field;
-      });
-      
-      return {
-        fields: processedFields || [],
-        clientScripts: data.message.__client_scripts || []
-      };
+      // Store all fields
+      apiCache.doctypeFields[doctype] = doctypeDef.fields || []
+      console.log(`Successfully fetched ${doctypeDef.fields.length} fields using standard API`)
+      return doctypeDef.fields
     } else {
-      throw new Error('Failed to get fields from standard API');
+      console.error("Failed to get fields from standard API")
+      throw new Error("Failed to get doctype fields")
     }
   } catch (error) {
-    console.error('Error fetching doctype fields:', error);
-    throw error;
+    console.error("Error fetching doctype fields:", error)
+    throw error
   }
 }
 
 /**
- * Fetch options for link fields
- * @param {string} doctype 
- * @param {Array} fields
- * @param {Object} filters
- * @returns {Promise<Array>} - Array of options
- */
-
-export async function fetchLinkOptions(doctype, fields = ['name'], filters = {}) {
-  try {
-    const response = await fetch(API_ENDPOINTS.GET_LIST, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        doctype,
-        fields,
-        filters,
-        limit: 50
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.message) {
-      return data.message;
-    }
-    return [];
-  } catch (error) {
-    console.error(`Error fetching options for ${doctype}:`, error);
-    return [];
-  }
-}
-
-/**
- * Fetch a single document
+ * Get field permissions for a doctype
  * @param {string} doctype - The doctype name
- * @param {string} name - The document name/ID
- * @returns {Promise<Object>} - The document data
+ * @returns {Promise<Object>} - Object mapping fieldnames to permission levels
  */
-export async function fetchDocument(doctype, name) {
+async function getFieldPermissions(doctype) {
   try {
-    const response = await fetch(API_ENDPOINTS.GET, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ doctype, name })
-    });
-    
-    const data = await response.json();
-    
-    if (data.message) {
-      return data.message;
+    const fields = await fetchDoctypeFields(doctype)
+
+    const fieldPermissions = {}
+
+    for (const field of fields) {
+      fieldPermissions[field.fieldname] = field.permlevel || 0
     }
-    throw new Error(`${doctype} not found`);
+
+    return fieldPermissions
   } catch (error) {
-    console.error(`Error fetching ${doctype}:`, error);
-    throw error;
+    console.error(`Error getting field permissions for ${doctype}:`, error)
+    return {}
   }
 }
 
 /**
- * Fetch a list of documents
- * @param {Object} params - Query parameters
- * @returns {Promise<Object>} - List of documents and total count
- */
-export async function fetchDocumentList(params) {
-  try {
-    const { doctype, fields = ['*'], filters = {}, orFilters, 
-            limit = 20, start = 0, orderBy = 'creation desc' } = params;
-    
-    // Fetch records with additional fields for link fields
-    const response = await fetch(API_ENDPOINTS.GET_LIST, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        doctype,
-        fields,
-        filters,
-        or_filters: orFilters,
-        limit_start: start,
-        limit_page_length: limit,
-        order_by: orderBy
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.message) {
-      const countResponse = await fetch(API_ENDPOINTS.GET_LIST, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          doctype,
-          fields: ['name'],
-          filters,
-          or_filters: orFilters,
-          limit_page_length: 0
-        })
-      });
-      
-      const countData = await countResponse.json();
-      
- 
-      const enhancedRecords = await enhanceRecordsWithLinkData(data.message, doctype);
-      
-      return {
-        records: enhancedRecords,
-        totalCount: countData.message ? countData.message.length : 0
-      };
-    }
-    
-    return { records: [], totalCount: 0 };
-  } catch (error) {
-    console.error(`Error fetching ${params.doctype} list:`, error);
-    throw error;
-  }
-}
-
-/**
- * Enhance records with link field data
- * @param {Array} records - The records to enhance
- * @param {string} doctype - The doctype name
- * @returns {Promise<Array>} - Enhanced records
- */
-async function enhanceRecordsWithLinkData(records, doctype) {
-  try {
-    const fieldsResult = await fetchDoctypeFields(doctype);
-    let fields = [];
-    
-    if (Array.isArray(fieldsResult)) {
-      fields = fieldsResult;
-    } else if (fieldsResult && fieldsResult.fields) {
-      fields = fieldsResult.fields;
-    }
-    
-
-    const linkFields = fields.filter(field => field.fieldtype === 'Link');
-    
-    if (linkFields.length === 0) {
-      return records;
-    }
-    
-    const enhancedRecords = [...records];
-    
-    for (const record of enhancedRecords) {
-      for (const linkField of linkFields) {
-        const linkValue = record[linkField.fieldname];
-        
-        if (linkValue) {
-          try {
-            const linkedDoc = await fetchDocument(linkField.options, linkValue);
-            
-            record[`${linkField.fieldname}_data`] = {
-              value: linkValue,
-              label: getLinkedDocLabel(linkedDoc, linkField.options)
-            };
-          } catch (error) {
-            console.error(`Error fetching linked document for ${linkField.fieldname}:`, error);
-            record[`${linkField.fieldname}_data`] = {
-              value: linkValue,
-              label: linkValue
-            };
-          }
-        }
-      }
-    }
-    
-    return enhancedRecords;
-  } catch (error) {
-    console.error('Error enhancing records with link data:', error);
-    return records;
-  }
-}
-
-/**
- * Get a display label for a linked document
- * @param {Object} doc - The linked document
+ * Fetch options for a Link field
  * @param {string} doctype - The linked doctype
- * @returns {string} - The display label
+ * @param {Array} fields - The fields to fetch
+ * @returns {Promise<Array>} - Array of option objects
  */
-function getLinkedDocLabel(doc, doctype) {
-  if (!doc) return '';
-  
-  switch (doctype) {
-    case 'Project':
-      return doc.project_name || doc.name;
-    case 'Contact':
-      return `${doc.first_name || ''} ${doc.last_name || ''}`.trim() || doc.name;
-    case 'Customer':
-      return doc.customer_name || doc.name;
-    case 'Supplier':
-      return doc.supplier_name || doc.name;
-    case 'Employee':
-      return `${doc.employee_name || ''} (${doc.name})`;
-    default:
-      for (const field of ['title', 'subject', 'name', 'description']) {
-        if (doc[field]) {
-          return doc[field];
-        }
-      }
-      return doc.name;
-  }
-}
+async function fetchLinkOptions(doctype, fields = ["name"]) {
+  const cacheKey = `${doctype}:${fields.join(",")}`
 
-/**
- * Save a document (create or update)
- * @param {Object} doc 
- * @param {boolean} isNew 
- * @returns {Promise<Object>}
- */
-export async function saveDocument(doc, isNew = true) {
+  // Check cache first
+  if (apiCache.linkOptions[cacheKey]) {
+    return apiCache.linkOptions[cacheKey]
+  }
+
   try {
-    const endpoint = isNew ? API_ENDPOINTS.INSERT : API_ENDPOINTS.SAVE;
-    
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ doc })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.exception || errorData.message || 'Error saving document');
-    }
-    
-    const data = await response.json();
-    
+    const response = await fetch("/api/method/frappe.client.get_list", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        doctype: doctype,
+        fields: fields,
+        limit: 50,
+      }),
+    })
+
+    const data = await response.json()
+
     if (data.message) {
-      return data.message;
+      apiCache.linkOptions[cacheKey] = data.message
+      return data.message
     }
-    
-    throw new Error('No response from server');
+
+    return []
   } catch (error) {
-    console.error('Error saving document:', error);
-    throw error;
-  }
-}
-
-/**
- * Delete a document
- * @param {string} doctype - The doctype name
- * @param {string} name - The document name/ID
- * @returns {Promise<boolean>} - Success status
- */
-export async function deleteDocument(doctype, name) {
-  try {
-    const response = await fetch(API_ENDPOINTS.DELETE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ doctype, name })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.exception || errorData.message || `Error deleting ${doctype}`);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error(`Error deleting ${doctype}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Upload a file
- * @param {File} file - The file to upload
- * @param {string} doctype - The doctype name
- * @param {string} fieldname - The field name
- * @param {string} docname - The document name (optional)
- * @returns {Promise<string>} - The file URL
- */
-
-export async function uploadFile(file, doctype, fieldname, docname = null) {
-  try {
-    const tempId = docname || Math.floor(Math.random() * 1000000).toString();
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('doctype', doctype);
-    formData.append('fieldname', fieldname);
-    formData.append('is_private', 0);
-    formData.append('docname', tempId);
-    
-    const response = await fetch(API_ENDPOINTS.UPLOAD, {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || errorData.exception || 'Error uploading file');
-    }
-    
-    const result = await response.json();
-    
-    if (result.message && result.message.file_url) {
-      return result.message.file_url;
-    } else {
-      throw new Error('Invalid response from server');
-    }
-  } catch (error) {
-    console.error('File upload error:', error);
-    throw error;
-  }
-}
-
-/**
- * Get the current logged in user
- * @returns {Promise<string>} - The username
- */
-
-export async function getCurrentUser() {
-  try {
-    const response = await fetch(API_ENDPOINTS.GET_LOGGED_USER);
-    const data = await response.json();
-    
-    if (data.message) {
-      return data.message;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching current user:', error);
-    return null;
+    console.error(`Error fetching options for ${doctype}:`, error)
+    return []
   }
 }
 
 /**
  * Fetch client scripts for a doctype
  * @param {string} doctype - The doctype name
- * @returns {Promise<Array>} - Array of client scripts
+ * @returns {Promise<Array>} - Array of client script objects
  */
-export async function fetchClientScripts(doctype) {
+async function fetchClientScripts(doctype) {
+  // Check cache first
+  if (apiCache.clientScripts[doctype]) {
+    return apiCache.clientScripts[doctype]
+  }
+
   try {
-    const response = await fetch(API_ENDPOINTS.GET_CLIENT_SCRIPTS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("/api/method/frappe.client.get_list", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        doctype: 'Client Script',
+        doctype: "Client Script",
+        fields: ["name", "script", "dt", "enabled"],
         filters: {
           dt: doctype,
-          enabled: 1
+          enabled: 1,
         },
-        fields: ['name', 'script', 'dt', 'enabled', 'view']
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.message && Array.isArray(data.message)) {
-      return data.message;
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      apiCache.clientScripts[doctype] = data.message
+      return data.message
     }
-    
-    return [];
+
+    return []
   } catch (error) {
-    console.error(`Error fetching client scripts for ${doctype}:`, error);
-    return [];
+    console.error(`Error fetching client scripts for ${doctype}:`, error)
+    return []
   }
 }
 
 /**
- * Fetch user permissions
- * @param {string} user 
- * @returns {Promise<Array>} 
+ * Fetch a document by doctype and name
+ * @param {string} doctype - The doctype name
+ * @param {string} name - The document name
+ * @returns {Promise<Object>} - The document object
  */
-export async function fetchUserPermissions(user = null) {
+async function fetchDocument(doctype, name) {
   try {
-    const currentUser = user || await getCurrentUser();
-    
-    if (!currentUser) {
-      return [];
-    }
-    
-    const response = await fetch(API_ENDPOINTS.GET_USER_PERMISSIONS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch("/api/method/frappe.client.get", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        doctype: 'User Permission',
-        fields: ['name', 'user', 'allow', 'for_value'],
-        filters: {
-          user: ['=', currentUser]
-        }
-      })
-    });
-    
-    const data = await response.json();
-    
-    if (data.message && Array.isArray(data.message)) {
-      return data.message;
+        doctype: doctype,
+        name: name,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      return data.message
     }
-    
-    return [];
+
+    throw new Error(`Document ${doctype} ${name} not found`)
   } catch (error) {
-    console.error('Error fetching user permissions:', error);
-    return [];
+    console.error(`Error fetching document ${doctype} ${name}:`, error)
+    throw error
   }
 }
 
+/**
+ * Fetch a list of documents
+ * @param {Object} options - The options object
+ * @param {string} options.doctype - The doctype name
+ * @param {Array} options.fields - The fields to fetch
+ * @param {Object} options.filters - The filters to apply
+ * @param {Array} options.orFilters - The OR filters to apply
+ * @param {number} options.start - The start index
+ * @param {number} options.limit - The limit
+ * @param {string} options.orderBy - The order by clause
+ * @returns {Promise<Object>} - Object with records and totalCount
+ */
+async function fetchDocumentList(options) {
+  try {
+    const {
+      doctype,
+      fields = ["*"],
+      filters = {},
+      orFilters,
+      start = 0,
+      limit = 20,
+      orderBy = "creation desc",
+    } = options
+
+    const requestBody = {
+      doctype: doctype,
+      fields: fields,
+      filters: filters,
+      start: start,
+      limit_page_length: limit,
+    }
+
+    if (orFilters && orFilters.length > 0) {
+      requestBody.or_filters = orFilters
+    }
+
+    if (orderBy) {
+      const [field, order] = orderBy.split(" ")
+      requestBody.order_by = `${field} ${order}`
+    }
+
+    const response = await fetch("/api/method/frappe.client.get_list", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      // Get total count
+      const countResponse = await fetch("/api/method/frappe.client.get_count", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          doctype: doctype,
+          filters: filters,
+        }),
+      })
+
+      const countData = await countResponse.json()
+
+      return {
+        records: data.message,
+        totalCount: countData.message || data.message.length,
+      }
+    }
+
+    return {
+      records: [],
+      totalCount: 0,
+    }
+  } catch (error) {
+    console.error(`Error fetching document list for ${options.doctype}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Create a new document
+ * @param {Object} doc - The document object
+ * @returns {Promise<Object>} - The created document
+ */
+async function createDocument(doc) {
+  try {
+    const response = await fetch("/api/method/frappe.client.insert", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        doc: doc,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      return data.message
+    }
+
+    throw new Error("Failed to create document")
+  } catch (error) {
+    console.error(`Error creating document ${doc.doctype}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Update an existing document
+ * @param {Object} doc - The document object
+ * @returns {Promise<Object>} - The updated document
+ */
+async function updateDocument(doc) {
+  try {
+    const response = await fetch("/api/method/frappe.client.save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        doc: doc,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      return data.message
+    }
+
+    throw new Error("Failed to update document")
+  } catch (error) {
+    console.error(`Error updating document ${doc.doctype} ${doc.name}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Save a document (create or update)
+ * @param {Object} doc - The document object
+ * @param {boolean} isNew - Whether this is a new document
+ * @returns {Promise<Object>} - The saved document
+ */
+async function saveDocument(doc, isNew = false) {
+  if (isNew) {
+    return createDocument(doc)
+  } else {
+    return updateDocument(doc)
+  }
+}
+
+/**
+ * Delete a document
+ * @param {string} doctype - The doctype name
+ * @param {string} name - The document name
+ * @returns {Promise<boolean>} - Whether the deletion was successful
+ */
+async function deleteDocument(doctype, name) {
+  try {
+    const response = await fetch("/api/method/frappe.client.delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        doctype: doctype,
+        name: name,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message === "ok") {
+      return true
+    }
+
+    throw new Error("Failed to delete document")
+  } catch (error) {
+    console.error(`Error deleting document ${doctype} ${name}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Clear the API cache
+ */
+function clearCache() {
+  apiCache.doctypeFields = {}
+  apiCache.linkOptions = {}
+  apiCache.clientScripts = {}
+}
 
 export default {
+  getCurrentUser,
+  fetchUserRoles,
+  fetchUserPermissions,
+  fetchDocPermissions,
   fetchDoctypeFields,
+  getFieldPermissions,
   fetchLinkOptions,
+  fetchClientScripts,
   fetchDocument,
   fetchDocumentList,
+  createDocument,
+  updateDocument,
   saveDocument,
   deleteDocument,
-  uploadFile,
-  getCurrentUser,
-  fetchClientScripts,
-  fetchUserPermissions,
-};
+  clearCache,
+}
+

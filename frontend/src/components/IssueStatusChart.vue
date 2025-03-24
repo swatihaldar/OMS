@@ -27,14 +27,15 @@ let chart = null;
 let resizeObserver = null;
 const currentUser = ref('');
 
+
 const getStatusColor = (status) => {
   switch (status) {
-    case 'Open': return '#F59E0B';
-    case 'Replied': return '#8B5CF6';
-    case 'Closed': return '#10B981';
-    case 'Resolved': return '#3B82F6';
-    case 'On Hold': return '#9CA3AF';
-    default: return '#D1D5DB';
+    case 'Open': return '#FF9F43'; 
+    case 'Replied': return '#7367F0'; 
+    case 'Closed': return '#28C76F'; 
+    case 'Resolved': return '#00CFE8'; 
+    case 'On Hold': return '#EA5455'; 
+    default: return '#9CA3AF'; 
   }
 };
 
@@ -46,14 +47,13 @@ const createChart = async () => {
   if (!chartRef.value) return;
 
   try {
-    // Get current user if not already fetched
     if (!currentUser.value) {
       const userResponse = await fetch('/api/method/frappe.auth.get_logged_user');
       const userData = await userResponse.json();
       currentUser.value = userData.message;
     }
 
-    // Fetch status counts for current user
+
     const response = await fetch('/api/method/frappe.client.get_list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -86,7 +86,7 @@ const createChart = async () => {
     const total = Object.values(userStatusCounts).reduce((sum, count) => sum + count, 0);
     const colors = Object.keys(userStatusCounts).map(status => getStatusColor(status));
 
-    // Create the chart
+    // Create the chart with improved styling
     const ctx = chartRef.value.getContext('2d');
     chart = new Chart(ctx, {
       type: 'doughnut',
@@ -95,8 +95,11 @@ const createChart = async () => {
         datasets: [{
           data: Object.values(userStatusCounts),
           backgroundColor: colors,
-          borderWidth: 0,
-          hoverOffset: 4
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 6,
+          hoverBorderWidth: 3,
+          hoverBorderColor: '#ffffff'
         }]
       },
       options: {
@@ -105,8 +108,10 @@ const createChart = async () => {
         cutout: '70%',
         layout: {
           padding: {
-            top: 10,
-            bottom: 10
+            top: 20,
+            bottom: 20,
+            left: 20,
+            right: 20
           }
         },
         plugins: {
@@ -114,11 +119,23 @@ const createChart = async () => {
             position: window.innerWidth < 768 ? 'bottom' : 'right',
             labels: {
               usePointStyle: true,
-              padding: 15,
-              font: { size: 12 }
+              padding: 20,
+              font: { 
+                size: 12,
+                weight: 'bold'
+              },
+              color: '#4B5563'
             }
           },
           tooltip: {
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            titleColor: '#111827',
+            bodyColor: '#4B5563',
+            borderColor: '#E5E7EB',
+            borderWidth: 1,
+            cornerRadius: 8,
+            boxPadding: 6,
+            usePointStyle: true,
             callbacks: {
               label: function(context) {
                 const label = context.label || '';
@@ -128,6 +145,12 @@ const createChart = async () => {
               }
             }
           }
+        },
+        animation: {
+          animateScale: true,
+          animateRotate: true,
+          duration: 1000,
+          easing: 'easeOutQuart'
         }
       },
       plugins: [{
@@ -140,19 +163,25 @@ const createChart = async () => {
           ctx.restore();
           
           const fontSize = width < 400 ? 12 : 14;
-          const valueFontSize = width < 400 ? 20 : 24;
+          const valueFontSize = width < 400 ? 24 : 30;
           
-          ctx.font = `${fontSize}px Arial`;
-          ctx.fillStyle = '#888888';
+          ctx.font = `${fontSize}px 'Inter', sans-serif`;
+          ctx.fillStyle = '#6B7280';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText('My Issues', width / 2, height / 2 - 15);
+          ctx.fillText('My Issues', width / 2, height / 2 - 20);
           
-          ctx.font = `bold ${valueFontSize}px Arial`;
-          ctx.fillStyle = '#333333';
+          ctx.font = `bold ${valueFontSize}px 'Inter', sans-serif`;
+          ctx.fillStyle = '#111827';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText(total.toLocaleString(), width / 2, height / 2 + 15);
+          ctx.fillText(total.toLocaleString(), width / 2, height / 2 + 10);
+          
+          ctx.font = `${fontSize}px 'Inter', sans-serif`;
+          ctx.fillStyle = '#6B7280';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('Total', width / 2, height / 2 + 35);
           
           ctx.save();
         }
@@ -201,3 +230,4 @@ onUnmounted(() => {
 
 watch(() => props.statusCounts, createChart, { deep: true });
 </script>
+

@@ -1,17 +1,26 @@
 <template>
-  <div class="min-h-screen bg-gray-50 p-4 ">
+  <div class="min-h-screen bg-gray-50 p-4">
     <!-- Header Section -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-4 max-w-7xl mx-auto">
-      <h2 class="text-2xl font-bold text-gray-800">Hey, {{ userName }}</h2>
-      <p class="text-gray-600 mt-2">Welcome to OMS</p>
+    <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-xl shadow-lg p-6 mb-6 max-w-7xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Hey, {{ userName }}</h2>
+          <p class="text-blue-100 mt-2">Welcome to your OMS Dashboard</p>
+        </div>
+        <div class="mt-4 md:mt-0">
+        </div>
+      </div>
     </div>
     
-    <div class="max-w-7xl mx-auto px-4 py-6">
+    <div class="max-w-7xl mx-auto">
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Chart Section -->
         <div class="lg:col-span-2">
           <div class="bg-white rounded-xl shadow-md p-6 h-full">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Issue Statistics</h3>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-800">Issue Statistics</h3>
+              <div class="text-sm text-gray-500">Updated just now</div>
+            </div>
             <div class="h-[300px] md:h-[350px]">
               <IssueStatusChart :statusCounts="statusCounts" />
             </div>
@@ -25,9 +34,9 @@
       </div>
       
       <!-- Recent Issues Section -->
-      <div class="mt-6">
+      <!-- <div class="mt-6">
         <RecentIssues :issues="recentIssues" />
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -92,7 +101,7 @@ onMounted(async () => {
       },
       body: JSON.stringify({
         doctype: 'Issue',
-        fields: ['name', 'subject', 'status', 'creation'],
+        fields: ['name', 'subject', 'status', 'creation', 'project', 'raised_by'],
         order_by: 'creation desc',
         limit: 5
       }),
@@ -108,3 +117,4 @@ onMounted(async () => {
   }
 });
 </script>
+
