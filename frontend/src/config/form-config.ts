@@ -1,65 +1,71 @@
-/**
- * Get the list of fields to hide in the form for a specific doctype
- * @param {string} doctype - The doctype name
- * @returns {Array} - Array of field names to hide
- */
-export function getHiddenFields(doctype) {
-  // Common fields to hide across all doctypes
-  const commonHiddenFields = [
-    "naming_series",
-    "amended_from",
-    "amendment_date",
-    "_user_tags",
-    "_comments",
-    "_assign",
-    "_liked_by",
-  ]
-
-  // Doctype-specific fields to hide
-  const doctypeHiddenFields = {
-    Issue: [
-      // Add Issue-specific fields to hide here
-      "via_customer_portal",
-      "resolution_date",
-      "first_response_time",
-      "additional_info",
-      "response_by",
-      "resolution_by",
-      "agreement_status",
-      "subject_section",
-    ],
-    Project: [
-      // Add Project-specific fields to hide here
-      "cost_center",
-      "collected_amount",
-      "total_costing_amount",
-      "total_expense_claim",
-      "total_purchase_cost",
-    ],
-    // Add more doctypes as needed
-  }
-
-  // Return combined list of hidden fields
-  return [...commonHiddenFields, ...(doctype && doctypeHiddenFields[doctype] ? doctypeHiddenFields[doctype] : [])]
-}
+export const HIDDEN_FIELDS = [
+  "avg_response_time",
+  "total_hold_time",
+  "lead",
+  "first_response_time",
+  "user_resolution_time",
+  "opening_date",
+  "opening_time",
+  "resolution_date",
+  "resolution_time",
+  "agreement_status",
+  "service_level_agreement",
+  "response_by",
+  "resolution_by",
+  "response_by_variance",
+  "resolution_by_variance",
+  "on_hold_since",
+  "total_hold_time",
+  "user",
+  "naming_series",
+  "raised_by",
+  "issue_type",
+  "customer_name",
+  "service_level_section",
+  "issue_split_from",
+  "contact",
+  "section_break_19",
+  "resolution_details",
+  "response",
+  "first_responded_on",
+  "additional_info",
+  "email_account",
+  "company",
+  "via_customer_portal",
+  "subject_section",
+  // "custom_demo_name",
+]
 
 /**
- * Get the list of fields to show in the list view for a specific doctype
- * @param {string} doctype - The doctype name
- * @returns {Array} - Array of field names to show in list view
+ * Additional hidden fields that can be dynamically added at runtime
  */
-export function getListViewFields(doctype) {
-  // Default fields to show in list view if not specified in doctype
-  const defaultListViewFields = {
-    Issue: ["name", "subject", "status", "priority", "creation"],
-    // Add more doctypes as needed
+export const additionalHiddenFields: string[] = []
+
+/**
+ * Get the complete list of hidden fields
+ * @returns {string[]} Array of field names to hide
+ */
+export const getHiddenFields = (): string[] => {
+  return [...HIDDEN_FIELDS, ...additionalHiddenFields]
+}
+
+/**
+ * Add a field to the hidden fields list
+ * @param {string} fieldname - The field name to hide
+ */
+export const hideField = (fieldname: string): void => {
+  if (!additionalHiddenFields.includes(fieldname)) {
+    additionalHiddenFields.push(fieldname)
   }
-
-  return doctype && defaultListViewFields[doctype] ? defaultListViewFields[doctype] : ["name", "creation", "modified"]
 }
 
-export default {
-  getHiddenFields,
-  getListViewFields,
+/**
+ * Remove a field from the hidden fields list
+ * @param {string} fieldname - The field name to show
+ */
+export const showField = (fieldname: string): void => {
+  const index = additionalHiddenFields.indexOf(fieldname)
+  if (index !== -1) {
+    additionalHiddenFields.splice(index, 1)
+  }
 }
-

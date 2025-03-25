@@ -21,7 +21,7 @@ export async function getDocTypePermissions(doctype) {
       read_all: 1
     };
     
-    // First try the direct permissions API
+
     try {
       const response = await fetch("/api/method/frappe.client.get_permissions", {
         method: "POST",
@@ -56,7 +56,7 @@ export async function getDocTypePermissions(doctype) {
       console.error("Error using direct permissions API:", directApiError);
     }
 
-    // Try to get user roles
+
     let userRoles = [];
     try {
       const userRolesResponse = await fetch("/api/method/frappe.auth.get_roles");
@@ -69,13 +69,13 @@ export async function getDocTypePermissions(doctype) {
       console.error("Error fetching user roles:", error);
     }
 
-    // Check if user has "Support Team" role - if yes, grant all permissions
+
     if (userRoles.includes("Support Team")) {
       console.log("User has Support Team role, granting all permissions");
       return defaultPermissions;
     }
 
-    // Fallback to getdoctype API
+
     try {
       const response = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
         method: "POST",
@@ -112,7 +112,7 @@ export async function getDocTypePermissions(doctype) {
       console.error("Error using getdoctype API:", error);
     }
 
-    // If all else fails, return default permissions for debugging
+
     console.log(`Using default permissions for ${doctype}`);
     return defaultPermissions;
   } catch (error) {

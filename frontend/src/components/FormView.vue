@@ -143,7 +143,6 @@
                 {{ option.label }}
               </option>
             </select>
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500">{{ field.description }}</p>
           </div>
 
           <!-- Text fields -->
@@ -157,10 +156,13 @@
               :required="field.reqd"
               :disabled="field.read_only || isReadOnly"
               :placeholder="field.placeholder || ''"
+              :maxlength="field.length || undefined"
               class="w-full h-10 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
             />
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500">{{ field.description }}</p>
+            <div v-if="field.length" class="text-xs text-gray-500 mt-1">
+              {{ formData[field.fieldname] ? formData[field.fieldname].length : 0 }}/{{ field.length }} characters
+            </div>
           </div>
 
           <!-- Text Editor -->
@@ -179,7 +181,6 @@
                 @update:content="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
               />
             </div>
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500">{{ field.description }}</p>
           </div>
 
           <!-- Date fields -->
@@ -195,7 +196,6 @@
               class="w-full h-10 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
             />
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500">{{ field.description }}</p>
           </div>
 
           <!-- Checkbox fields -->
@@ -213,7 +213,6 @@
                 {{ field.label }}
               </label>
             </div>
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500 ml-6">{{ field.description }}</p>
           </div>
 
           <!-- Number fields -->
@@ -227,10 +226,11 @@
               :step="field.fieldtype === 'Int' ? '1' : '0.01'"
               :required="field.reqd"
               :disabled="field.read_only || isReadOnly"
+              :min="field.min_value !== undefined ? field.min_value : undefined"
+              :max="field.max_value !== undefined ? field.max_value : undefined"
               class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
             />
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500">{{ field.description }}</p>
           </div>
 
           <!-- Attach Image -->
@@ -255,7 +255,7 @@
                     <input
                       type="file"
                       class="sr-only"
-                      accept="image/*"
+                      accept="image"
                       @change="(e) => handleFileUpload(e, field.fieldname)"
                     />
                     
@@ -279,7 +279,6 @@
                 </svg>
               </button>
             </div>
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500">{{ field.description }}</p>
           </div>
 
           <!-- Attach -->
@@ -330,7 +329,7 @@
                 </svg>
               </button>
             </div>
-            <p v-if="field.description" class="mt-1 text-xs text-gray-500">{{ field.description }}</p>
+
           </div>
         </div>
       </template>
@@ -378,6 +377,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import api from '@/utils/api';
+import { getHiddenFields } from '@/config/form-config';
 
 const props = defineProps({
   modelValue: {
@@ -462,11 +462,15 @@ const docTitle = computed(() => {
 });
 
 const visibleFields = computed(() => {
+  // Get the list of hidden fields from the config
+  const hiddenFieldsList = getHiddenFields();
+  
   return props.fields
     .filter(field => 
       field && 
       field.fieldname && 
-      !field.hidden
+      !field.hidden &&
+      !hiddenFieldsList.includes(field.fieldname) // Filter out fields in the hidden fields list
     )
     .sort((a, b) => (a.idx || 0) - (b.idx || 0));
 });

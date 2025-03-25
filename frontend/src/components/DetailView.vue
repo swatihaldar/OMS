@@ -774,7 +774,7 @@ async function fetchDoctypeFields(doctype) {
       console.error('Error using custom API, falling back to standard API:', error);
     }
     
-    // Fallback to standard Frappe API
+ 
     const response = await fetch('/api/method/frappe.desk.form.load.getdoctype', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
