@@ -1,15 +1,19 @@
 <template>
-  <div class="max-w-4xl mx-auto p-4">
-    <!-- Header -->
-    <div class="flex items-center mb-6">
-      <button @click="$router.back()" class="mr-4 text-gray-600 hover:text-gray-800 transition-colors">
-        <ChevronLeftIcon class="h-6 w-6" />
-      </button>
-      <h2 class="text-xl font-semibold">{{ isEditMode ? 'Edit' : 'New' }} {{ doctype }}</h2>
+  <div class="max-w-4xl mx-auto">
+    <!-- Fixed Header -->
+    <div class="sticky top-0 z-20 bg-white p-2 md:p-4 border-b">
+      <div class="flex items-center">
+        <button @click="$router.back()" class="mr-4 text-gray-600 hover:text-gray-800 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h2 class="text-xl font-semibold">{{ isEditMode ? 'Edit' : 'New' }} {{ doctype }}</h2>
+      </div>
     </div>
 
     <!-- Alert Messages -->
-    <div v-if="alertMessage" class="mb-4 p-4 rounded-lg" :class="alertType === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
+    <div v-if="alertMessage" class="m-4 p-4 rounded-lg" :class="alertType === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'">
       <div class="flex">
         <div class="flex-shrink-0">
           <svg v-if="alertType === 'error'" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -41,57 +45,58 @@
     </div>
 
     <!-- Form -->
-    <FormView
-      v-else
-      ref="formViewRef"
-      v-model="formData"
-      :fields="processedFields"
-      :field-options="fieldOptions"
-      @validate="validateForm"
-      @submit="submitForm"
-      @field-change="handleFieldChange"
-      @delete="handleDelete"
-      :submit-text="isEditMode ? 'Update' : 'Create'"
-      :submitting-text="isEditMode ? 'Updating...' : 'Creating...'"
-      :doctype="doctype"
-      :docname="recordId"
-      :mode="isEditMode ? 'edit' : 'add'"
-      :titleField="titleField"
-    >
-      <!-- Custom actions -->
-      <template #actions>
-        <div class="flex flex-col sm:flex-row gap-3 mt-6">
-          <button
-            type="button"
-            @click="$router.back()"
-            class="w-full sm:w-1/3 bg-gray-200 text-gray-800 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            :disabled="submitting"
-            class="w-full sm:w-2/3 bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-400 flex items-center justify-center"
-          >
-            <span v-if="submitting" class="flex items-center justify-center">
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ isEditMode ? 'Updating...' : 'Creating...' }}
-            </span>
-            <span v-else>{{ isEditMode ? 'Update' : 'Create' }}</span>
-          </button>
-        </div>
-      </template>
-    </FormView>
+    <div v-else class="form-container">
+      <FormView
+        ref="formViewRef"
+        v-model="formData"
+        :fields="processedFields"
+        :field-options="fieldOptions"
+        @validate="validateForm"
+        @submit="submitForm"
+        @field-change="handleFieldChange"
+        @delete="handleDelete"
+        :submit-text="isEditMode ? 'Update' : 'Create'"
+        :submitting-text="isEditMode ? 'Updating...' : 'Creating...'"
+        :doctype="doctype"
+        :docname="recordId"
+        :mode="isEditMode ? 'edit' : 'add'"
+        :titleField="titleField"
+      >
+        <!-- Custom actions -->
+        <!-- <template #actions>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              @click="$router.back()"
+              class="w-full sm:w-1/3 bg-gray-200 text-gray-800 py-3 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              :disabled="submitting"
+              class="w-full sm:w-2/3 bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:bg-gray-400 flex items-center justify-center"
+              @click="submitFormDirectly"
+            >
+              <span v-if="submitting" class="flex items-center justify-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{ isEditMode ? 'Updating...' : 'Creating...' }}
+              </span>
+              <span v-else>{{ isEditMode ? 'Update' : 'Save' }}</span>
+            </button>
+          </div>
+        </template> -->
+      </FormView>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { ChevronLeftIcon } from '@heroicons/vue/24/outline';
 import FormView from '@/components/FormView.vue';
 import api from '@/utils/api';
 
@@ -226,11 +231,9 @@ const fetchUserPermissions = async () => {
 };
 
 const applyUserPermissionsToFormData = () => {
-
   if (isEditMode.value) return;
   
   userPermissions.value.forEach(permission => {
-
     const linkFields = processedFields.value.filter(field => 
       field.fieldtype === 'Link' && field.options === permission.allow
     );
@@ -394,14 +397,12 @@ const triggerEvent = (event, fieldname = null) => {
   }
 };
 
-
 const fetchRecord = async () => {
   try {
     loading.value = true;
     
     const data = await api.fetchDocument(props.doctype, props.recordId);
     
-  
     if (!hasPermissionForRecord(data)) {
       alertMessage.value = `You don't have permission to access this ${props.doctype}`;
       alertType.value = 'error';
@@ -444,7 +445,7 @@ const initializeFormData = () => {
     ...props.defaultValues
   };
   
-
+  // Set default values from field definitions
   for (const field of processedFields.value) {
     if (field.default && !formData.value[field.fieldname]) {
       formData.value[field.fieldname] = field.default;
@@ -463,6 +464,13 @@ const handleFieldChange = ({ fieldname, value, file }) => {
 const validateForm = () => {
   triggerEvent('validate');
   console.log('Validating form...');
+};
+
+// New method to directly submit the form
+const submitFormDirectly = () => {
+  if (formViewRef.value) {
+    formViewRef.value.handleSubmit();
+  }
 };
 
 const submitForm = async ({ formData: submittedData, files }) => {
@@ -570,7 +578,6 @@ onMounted(async () => {
   }
 });
 
-
 watch([() => props.doctype, () => props.recordId], async () => {
   loading.value = true;
   
@@ -596,7 +603,6 @@ watch([() => props.doctype, () => props.recordId], async () => {
   }
 });
 
-
 watch(() => formData.value, (newValue, oldValue) => {
   if (!oldValue) return;
   
@@ -612,14 +618,24 @@ watch(() => formData.value, (newValue, oldValue) => {
 </script>
 
 <style>
+.form-container {
+  padding: 0;
+}
+
 @media (max-width: 640px) {
-  .form-view {
-    padding: 1rem 0.75rem;
+  .form-container {
+    padding: 0;
+  }
+  
+  button[type="submit"],
+  button[type="button"] {
+    min-height: 48px;
   }
 }
 
 @media (min-width: 1024px) {
-  button[type="submit"] {
+  button[type="submit"],
+  button[type="button"] {
     height: 48px;
     font-size: 1rem;
   }

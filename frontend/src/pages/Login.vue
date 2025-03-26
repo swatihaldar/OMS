@@ -81,7 +81,7 @@
             </div>
           </div>
 
-          <div class="flex items-center justify-between">
+          <!-- <div class="flex items-center justify-between">
             <div class="flex items-center">
               <input
                 id="remember-me"
@@ -94,7 +94,7 @@
                 Remember me
               </label>
             </div>
-          </div>
+          </div> -->
 
           <div>
             <button
@@ -132,7 +132,7 @@
     
     <!-- Footer -->
     <div class="mt-8 text-center text-xs text-gray-500">
-      <p>© {{ new Date().getFullYear() }} Frappe OMS. All rights reserved.</p>
+      <p>© {{ new Date().getFullYear() }}  OMS.</p>
     </div>
   </div>
 </template>

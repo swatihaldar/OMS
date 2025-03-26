@@ -19,7 +19,6 @@ export const HIDDEN_FIELDS = [
   "user",
   "naming_series",
   "raised_by",
-  "issue_type",
   "customer_name",
   "service_level_section",
   "issue_split_from",
@@ -30,9 +29,10 @@ export const HIDDEN_FIELDS = [
   "first_responded_on",
   "additional_info",
   "email_account",
-  "company",
   "via_customer_portal",
   "subject_section",
+  "custom_qc_count","custom_qc_rework_count","custom_client_rework_count","custom_client_change_count_"
+
   // "custom_demo_name",
 ]
 

@@ -102,16 +102,19 @@ const routes = [
     path: "/",
     name: "Home",
     component: Home,
+    meta: { requiresAuth: true }
   },
   {
     path: "/account/login",
     name: "Login",
     component: Login,
+    meta: { requiresAuth: false }
   },
   {
     path: "/profile",
     name: "Profile",
     component: Profile,
+    meta: { requiresAuth: true }
   },
 ]
 
@@ -146,22 +149,45 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, from, next) => {
-  if (to.meta.requiresAuth) {
-    try {
-      const response = await fetch("/api/method/frappe.auth.get_logged_user")
-      const data = await response.json()
+// router.beforeEach(async (to, from, next) => {
+//   if (to.meta.requiresAuth) {
+//     try {
+//       const response = await fetch("/api/method/frappe.auth.get_logged_user")
+//       const data = await response.json()
 
-      if (!data.message) {
-        return next({ path: "/account/login", query: { redirect: to.fullPath } })
-      }
-    } catch (error) {
-      console.error("Auth check failed:", error)
-      return next({ path: "/account/login", query: { redirect: to.fullPath } })
-    }
+//       if (!data.message) {
+//         return next({ path: "/account/login", query: { redirect: to.fullPath } })
+//       }
+//     } catch (error) {
+//       console.error("Auth check failed:", error)
+//       return next({ path: "/account/login", query: { redirect: to.fullPath } })
+//     }
+//   }
+//   next()
+// })
+
+router.beforeEach(async (to, from, next) => {
+  const isAuthenticated = await checkAuthStatus()
+  
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/account/login')
+  } else if (to.path === '/account/login' && isAuthenticated) {
+    next('/')
+  } else {
+    next()
   }
-  next()
 })
+
+async function checkAuthStatus() {
+  try {
+    const response = await fetch('/api/method/frappe.auth.get_logged_user')
+    const data = await response.json()
+    return data.message && data.message !== 'Guest'
+  } catch (error) {
+    return false
+  }
+}
+
 
 export default router
 

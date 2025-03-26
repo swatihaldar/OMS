@@ -232,10 +232,13 @@ async function getFieldPermissions(doctype) {
  * Fetch options for a Link field
  * @param {string} doctype - The linked doctype
  * @param {Array} fields - The fields to fetch
+ * @param {Object} filters - Optional filters to apply
+ * @param {number} start - Optional start index for pagination
+ * @param {number} limit - Optional limit for pagination
  * @returns {Promise<Array>} - Array of option objects
  */
-async function fetchLinkOptions(doctype, fields = ["name"]) {
-  const cacheKey = `${doctype}:${fields.join(",")}`
+async function fetchLinkOptions(doctype, fields = ["name"], filters = {}, start = 0, limit = 9999) {
+  const cacheKey = `${doctype}:${fields.join(",")}:${JSON.stringify(filters)}:${start}:${limit}`
 
   // Check cache first
   if (apiCache.linkOptions[cacheKey]) {
@@ -251,7 +254,9 @@ async function fetchLinkOptions(doctype, fields = ["name"]) {
       body: JSON.stringify({
         doctype: doctype,
         fields: fields,
-        limit: 50,
+        filters: filters,
+        start: start,
+        limit_page_length: limit,
       }),
     })
 
@@ -531,6 +536,43 @@ async function deleteDocument(doctype, name) {
 }
 
 /**
+ * Upload a file
+ * @param {File} file - The file to upload
+ * @param {string} doctype - The doctype name
+ * @param {string} fieldname - The field name
+ * @param {string} docname - The document name
+ * @returns {Promise<string>} - The file URL
+ */
+async function uploadFile(file, doctype, fieldname, docname) {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('doctype', doctype)
+    formData.append('fieldname', fieldname)
+    
+    if (docname) {
+      formData.append('docname', docname)
+    }
+    
+    const response = await fetch('/api/method/upload_file', {
+      method: 'POST',
+      body: formData
+    })
+    
+    const data = await response.json()
+    
+    if (data.message && data.message.file_url) {
+      return data.message.file_url
+    }
+    
+    throw new Error('Failed to upload file')
+  } catch (error) {
+    console.error(`Error uploading file:`, error)
+    throw error
+  }
+}
+
+/**
  * Clear the API cache
  */
 function clearCache() {
@@ -554,6 +596,6 @@ export default {
   updateDocument,
   saveDocument,
   deleteDocument,
+  uploadFile,
   clearCache,
 }
-
