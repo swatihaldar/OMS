@@ -903,14 +903,19 @@ const processDateDefaults = () => {
       const today = new Date();
       
       if (field.fieldtype === 'Date') {
-        formData.value[field.fieldname] = today.toISOString().split('T')[0];
+        formData.value[field.fieldname] = today.toISOString().split('T')[0]; // YYYY-MM-DD
       } else {
-        // Format: YYYY-MM-DDThh:mm
-        formData.value[field.fieldname] = today.toISOString().slice(0, 16);
+        formData.value[field.fieldname] = today.toISOString().slice(0, 16); // YYYY-MM-DDThh:mm
       }
     }
   });
+
+  // Ensure `opening_date` is updated if it is still "Today"
+  if (formData.value.opening_date === 'Today') {
+    formData.value.opening_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  }
 };
+
 
 // Fetch user permissions
 const fetchUserPermissions = async () => {

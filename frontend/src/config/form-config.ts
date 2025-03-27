@@ -40,7 +40,7 @@ export const HIDDEN_FIELDS = [
 /**
  * Additional hidden fields that can be dynamically added at runtime
  */
-export const additionalHiddenFields: string[] = []
+export const additionalHiddenFields: string[] = ["opening_date"]
 
 export const getHiddenFields = (): string[] => {
   return [...HIDDEN_FIELDS, ...additionalHiddenFields]
