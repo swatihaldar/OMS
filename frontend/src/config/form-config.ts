@@ -4,9 +4,8 @@ export const HIDDEN_FIELDS = [
   "lead",
   "first_response_time",
   "user_resolution_time",
-  // "opening_date",
+  "opening_date",
   "opening_time",
- 
   "resolution_time",
   "agreement_status",
   "service_level_agreement",
@@ -18,7 +17,6 @@ export const HIDDEN_FIELDS = [
   "total_hold_time",
   "user",
   "naming_series",
-  "raised_by",
   "customer_name",
   "service_level_section",
   "issue_split_from",
