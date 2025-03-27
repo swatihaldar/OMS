@@ -4,9 +4,9 @@ export const HIDDEN_FIELDS = [
   "lead",
   "first_response_time",
   "user_resolution_time",
-  "opening_date",
+  // "opening_date",
   "opening_time",
-  "resolution_date",
+ 
   "resolution_time",
   "agreement_status",
   "service_level_agreement",
@@ -31,9 +31,12 @@ export const HIDDEN_FIELDS = [
   "email_account",
   "via_customer_portal",
   "subject_section",
-  "custom_qc_count","custom_qc_rework_count","custom_client_rework_count","custom_client_change_count_","sla_resolution_by"
+  "custom_qc_count",
+  "custom_qc_rework_count",
+  "custom_client_rework_count",
+  "custom_client_change_count_",
+  "sla_resolution_by"
 
-  // "custom_demo_name",
 ]
 
 /**

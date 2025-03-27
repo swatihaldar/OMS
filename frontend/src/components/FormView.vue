@@ -1,6 +1,5 @@
 <template>
   <div class="bg-white rounded-lg shadow-sm form-view">
-
     <!-- Scrollable Content Area -->
     <div class="p-4 md:p-6 overflow-y-auto form-content">
       <!-- Loading State -->
@@ -115,19 +114,98 @@
             <!-- Regular fields -->
             <div v-else class="field-container" :class="getColumnClass(index)">
 
-              <!-- Select/Link fields -->
-              <div v-if="field.fieldtype === 'Link' || field.fieldtype === 'Select'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+              <!-- Link fields with search -->
+              <div v-if="field.fieldtype === 'Link'" class="relative">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
+                </label>
+                
+                <!-- Search input for link field -->
+                <div class="relative">
+                  <input
+                    v-model="linkSearchQueries[field.fieldname]"
+                    type="text"
+                    class="w-full h-10 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    :class="{
+                      'bg-gray-100': field.read_only || isReadOnly,
+                      'border-red-500': isFieldInvalid(field.fieldname) && field.reqd
+                    }"
+                    :disabled="field.read_only || isReadOnly"
+                    @focus="openLinkDropdown(field.fieldname)"
+                    @blur="closeLinkDropdownDelayed(field.fieldname)"
+                  />
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <!-- Dropdown for link options -->
+                <div 
+                  v-if="activeLinkDropdown === field.fieldname"
+                  class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
+                >
+                  <div 
+                    v-for="option in getFilteredOptionsForField(field)" 
+                    :key="option.value"
+                    class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
+                    @mousedown="selectLinkOption(field.fieldname, option.value)"
+                  >
+                    <span class="block truncate" :class="{'font-semibold': formData[field.fieldname] === option.value}">
+                      {{ option.label }}
+                    </span>
+                    <span 
+                      v-if="formData[field.fieldname] === option.value" 
+                      class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600"
+                    >
+                      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div v-if="getFilteredOptionsForField(field).length === 0" class="py-2 px-3 text-gray-500 italic">
+                    No results found
+                  </div>
+                </div>
+              </div>
+
+              <!-- Select fields -->
+              <div v-else-if="field.fieldtype === 'Select'">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
+                  {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
                 <select
                   v-model="formData[field.fieldname]"
                   :required="field.reqd"
                   :disabled="field.read_only || isReadOnly"
-                  class="w-full h-10 rounded-lg bg-gray-100 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  class="w-full h-10 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  :class="{
+                    'bg-gray-100': field.read_only || isReadOnly,
+                    'border-red-500': isFieldInvalid(field.fieldname) && field.reqd
+                  }"
                   @change="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
                 >
-                  <option value="">Select {{ field.label }}</option>
                   <option 
                     v-for="option in getOptionsForField(field)" 
                     :key="option.value"
@@ -140,8 +218,18 @@
 
               <!-- Text fields -->
               <div v-else-if="isTextInputField(field)">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
                 <input
                   v-model="formData[field.fieldname]"
@@ -149,7 +237,11 @@
                   :required="field.reqd"
                   :disabled="field.read_only || isReadOnly"
                   :maxlength="field.length || 140"
-                  class="w-full h-10 rounded-lg bg-gray-100 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  class="w-full h-10 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  :class="{
+                    'bg-gray-100': field.read_only || isReadOnly,
+                    'border-red-500': isFieldInvalid(field.fieldname) && field.reqd
+                  }"
                   @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
                 />
                 <!-- <div v-if="field.length || field.fieldtype === 'Data'" class="text-xs text-gray-500 mt-1">
@@ -159,26 +251,52 @@
 
               <!-- Long Text fields -->
               <div v-else-if="field.fieldtype === 'Long Text' || field.fieldtype === 'Small Text'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
                 <textarea
                   v-model="formData[field.fieldname]"
                   :required="field.reqd"
                   :disabled="field.read_only || isReadOnly"
-                  :placeholder="field.placeholder || `Enter ${field.label}`"
                   :rows="field.fieldtype === 'Long Text' ? 6 : 3"
-                  class="w-full rounded-lg bg-gray-100 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  :class="{
+                    'bg-gray-100': field.read_only || isReadOnly,
+                    'border-red-500': isFieldInvalid(field.fieldname) && field.reqd
+                  }"
                   @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
                 ></textarea>
               </div>
 
               <!-- Text Editor -->
               <div v-else-if="field.fieldtype === 'Text Editor'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
-                <div class="border rounded-lg overflow-hidden">
+                <div 
+                  class="border rounded-lg overflow-hidden"
+                  :class="{'border-red-500': isFieldInvalid(field.fieldname) && field.reqd}"
+                >
                   <QuillEditor
                     v-model:content="formData[field.fieldname]"
                     toolbar="full"
@@ -193,15 +311,29 @@
 
               <!-- Date fields -->
               <div v-else-if="field.fieldtype === 'Date' || field.fieldtype === 'Datetime'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
                 <input
                   v-model="formData[field.fieldname]"
                   :type="field.fieldtype === 'Date' ? 'date' : 'datetime-local'"
                   :required="field.reqd"
                   :disabled="field.read_only || isReadOnly"
-                  class="w-full h-10 rounded-lg bg-gray-100 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  class="w-full h-10 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  :class="{
+                    'bg-gray-100': field.read_only || isReadOnly,
+                    'border-red-500': isFieldInvalid(field.fieldname) && field.reqd
+                  }"
                   @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
                 />
               </div>
@@ -214,18 +346,39 @@
                     type="checkbox"
                     :disabled="field.read_only || isReadOnly"
                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    :class="{'bg-gray-100': field.read_only || isReadOnly}"
                     @change="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
                   />
-                  <label class="ml-2 block text-sm text-gray-700">
+                  <label 
+                    class="ml-2 block text-sm text-gray-700 group relative"
+                  >
                     {{ field.label }}
+                    <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                   </label>
                 </div>
               </div>
 
               <!-- Number fields -->
               <div v-else-if="isNumberField(field)">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
                 <input
                   v-model="formData[field.fieldname]"
@@ -235,19 +388,34 @@
                   :disabled="field.read_only || isReadOnly"
                   :min="field.min_value !== undefined ? field.min_value : undefined"
                   :max="field.max_value !== undefined ? field.max_value : undefined"
-                  class="w-full rounded-lg bg-gray-100 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  :class="{
+                    'bg-gray-100': field.read_only || isReadOnly,
+                    'border-red-500': isFieldInvalid(field.fieldname) && field.reqd
+                  }"
                   @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
                 />
               </div>
 
               <!-- Attach Image -->
               <div v-else-if="field.fieldtype === 'Attach Image'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
                 <div
                   v-if="!getImagePreview(field.fieldname) && !(field.read_only || isReadOnly)"
                   class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg"
+                  :class="{'border-red-500': isFieldInvalid(field.fieldname) && field.reqd}"
                   @dragover.prevent
                   @drop.prevent="(e) => handleDrop(e, field.fieldname)"
                 >
@@ -289,12 +457,23 @@
 
               <!-- Attach -->
               <div v-else-if="field.fieldtype === 'Attach'">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
+                <label 
+                  class="block text-sm font-medium text-gray-700 mb-1 group relative"
+                >
                   {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                  <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                      {{ field.description }}
+                    </div>
+                  </span>
                 </label>
                 <div
                   v-if="!getAttachmentName(field.fieldname) && !(field.read_only || isReadOnly)"
                   class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 rounded-lg"
+                  :class="{'border-red-500': isFieldInvalid(field.fieldname) && field.reqd}"
                   @dragover.prevent
                   @drop.prevent="(e) => handleDrop(e, field.fieldname)"
                 >
@@ -343,40 +522,38 @@
 
     <!-- Fixed Footer with Actions -->
     <div class="sticky bottom-0 z-10 bg-white p-4 md:p-6 border-t">
-  <slot name="actions">
-    <div class="flex flex-wrap gap-3">
-     
-      <button
-        v-if="mode === 'edit' && !isReadOnly"
-        type="button"
-        @click="confirmDelete"
-        class="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
-      >
-        Delete
-      </button>
-      <button
-        @click="handleSubmit"
-        :disabled="submitting || isReadOnly"
-        class="flex-1 bg-gray-900 text-white py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:bg-gray-800"
-      >
-        <span v-if="submitting" class="flex items-center justify-center">
-          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          {{ submittingText || 'Saving...' }}
-        </span>
-        <span v-else>{{ submitText || 'Save' }}</span>
-      </button>
+      <slot name="actions">
+        <div class="flex flex-wrap gap-3">
+          <button
+            v-if="mode === 'edit' && !isReadOnly"
+            type="button"
+            @click="confirmDelete"
+            class="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            @click="handleSubmit"
+            :disabled="submitting || isReadOnly"
+            class="flex-1 bg-gray-900 text-white py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:bg-gray-800"
+          >
+            <span v-if="submitting" class="flex items-center justify-center">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ submittingText || 'Saving...' }}
+            </span>
+            <span v-else>{{ submitText || 'Save' }}</span>
+          </button>
+        </div>
+      </slot>
     </div>
-  </slot>
-</div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import api from '@/utils/api';
@@ -449,6 +626,10 @@ const filePreviewUrls = ref({});
 const isEditing = ref(false);
 const originalData = ref({});
 const linkFieldOptions = ref({});
+const invalidFields = ref([]);
+const linkSearchQueries = ref({});
+const activeLinkDropdown = ref(null);
+const userPermissions = ref([]);
 
 // Computed properties
 const formData = computed({
@@ -550,6 +731,20 @@ const getOptionsForField = (field) => {
   return [];
 };
 
+// Filtered options for link fields with search
+const getFilteredOptionsForField = (field) => {
+  const options = getOptionsForField(field);
+  const searchQuery = linkSearchQueries.value[field.fieldname] || '';
+  
+  if (!searchQuery) {
+    return options;
+  }
+  
+  return options.filter(option => 
+    option.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+};
+
 const getFieldDisplayValue = (fieldname) => {
   const field = props.fields.find(f => f.fieldname === fieldname);
   if (!field) return formData.value[fieldname] || '';
@@ -590,6 +785,63 @@ const getAttachmentName = (fieldname) => {
   }
   
   return null;
+};
+
+// Link field dropdown handling
+const openLinkDropdown = (fieldname) => {
+  activeLinkDropdown.value = fieldname;
+  
+  // Initialize search query with current value's label if it exists
+  if (formData.value[fieldname]) {
+    const field = props.fields.find(f => f.fieldname === fieldname);
+    if (field && field.fieldtype === 'Link') {
+      const options = getOptionsForField(field);
+      const option = options.find(opt => opt.value === formData.value[fieldname]);
+      if (option) {
+        linkSearchQueries.value[fieldname] = option.label;
+      }
+    }
+  }
+};
+
+const closeLinkDropdownDelayed = (fieldname) => {
+  setTimeout(() => {
+    if (activeLinkDropdown.value === fieldname) {
+      activeLinkDropdown.value = null;
+    }
+  }, 200);
+};
+
+// Improve the selectLinkOption function to handle user permission fields
+const selectLinkOption = (fieldname, value) => {
+  // Check if this field is controlled by user permissions
+  const field = props.fields.find(f => f.fieldname === fieldname);
+  const isUserPermissionField = field && userPermissions.value.some(p => 
+    p.allow === field.options
+  );
+  
+  // Only allow changing if not controlled by user permissions
+  if (!isUserPermissionField || field.read_only !== 1) {
+    formData.value[fieldname] = value;
+    
+    // Update search query with selected option's label
+    if (field && field.fieldtype === 'Link') {
+      const options = getOptionsForField(field);
+      const option = options.find(opt => opt.value === value);
+      if (option) {
+        linkSearchQueries.value[fieldname] = option.label;
+      }
+    }
+    
+    handleFieldChange({ fieldname, value });
+  }
+  
+  activeLinkDropdown.value = null;
+};
+
+// Check if a field is invalid (for validation styling)
+const isFieldInvalid = (fieldname) => {
+  return invalidFields.value.includes(fieldname);
 };
 
 // File handling
@@ -643,16 +895,96 @@ const removeFile = (fieldname) => {
   emit('field-change', { fieldname, value: null, file: null });
 };
 
+// Process default values for date fields
+const processDateDefaults = () => {
+  visibleFields.value.forEach(field => {
+    if ((field.fieldtype === 'Date' || field.fieldtype === 'Datetime') && 
+        formData.value[field.fieldname] === 'Today') {
+      const today = new Date();
+      
+      if (field.fieldtype === 'Date') {
+        formData.value[field.fieldname] = today.toISOString().split('T')[0];
+      } else {
+        // Format: YYYY-MM-DDThh:mm
+        formData.value[field.fieldname] = today.toISOString().slice(0, 16);
+      }
+    }
+  });
+};
+
+// Fetch user permissions
+const fetchUserPermissions = async () => {
+  try {
+    // Fetch user permissions
+    const response = await fetch('/api/method/frappe.client.get_list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doctype: 'User Permission',
+        fields: ['name', 'user', 'allow', 'for_value'],
+        filters: {
+          user: ['=', await api.getCurrentUser()]
+        }
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.message) {
+      userPermissions.value = data.message;
+      console.log('User permissions loaded:', userPermissions.value);
+      
+      // Apply user permissions to form data immediately
+      if (props.mode !== 'edit') {
+        applyUserPermissionsToFormData();
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching user permissions:', error);
+  }
+};
+
+// Apply user permissions to form data
+const applyUserPermissionsToFormData = () => {
+  if (props.mode === 'edit') return;
+  
+  userPermissions.value.forEach(permission => {
+    const linkFields = props.fields.filter(field => 
+      field.fieldtype === 'Link' && field.options === permission.allow
+    );
+    
+    linkFields.forEach(field => {
+      // Set the default value from user permission
+      formData.value[field.fieldname] = permission.for_value;
+      
+      // Also set the search query to match the selected value
+      linkSearchQueries.value[field.fieldname] = permission.for_value;
+      
+      // Mark field as read-only
+      const fieldIndex = props.fields.findIndex(f => f.fieldname === field.fieldname);
+      if (fieldIndex !== -1) {
+        props.fields[fieldIndex].read_only = 1;
+        props.fields[fieldIndex].read_only_depends_on = `User Permission for ${permission.allow}`;
+      }
+    });
+  });
+};
+
 // Form actions
 const handleSubmit = () => {
   errorMessage.value = '';
-
+  invalidFields.value = [];
+  
+  // Process date defaults before submission
+  processDateDefaults();
+  
   const missingFields = visibleFields.value
     .filter(field => field.reqd && !formData.value[field.fieldname] && !fileAttachments.value[field.fieldname])
-    .map(field => field.label);
+    .map(field => field.fieldname);
 
   if (missingFields.length > 0) {
-    errorMessage.value = `Please fill in the following required fields: ${missingFields.join(', ')}`;
+    errorMessage.value = `Please fill in all required fields`;
+    invalidFields.value = missingFields;
     return;
   }
 
@@ -742,24 +1074,36 @@ const fetchLinkFieldOptions = async () => {
       
       // Special handling for common doctypes
       if (field.options === 'Project') {
-        const projects = await api.fetchLinkOptions('Project', ['name', 'project_name'], {}, 0, 9999);
+        const projects = await api.fetchLinkOptions('Project', ['name', 'project_name', 'creation']);
         options = projects.map(item => ({
           value: item.name,
-          label: item.project_name || item.name
+          label: item.project_name || item.name,
+          creation: item.creation
         }));
       } else if (field.options === 'Contact') {
-        const contacts = await api.fetchLinkOptions('Contact', ['name', 'first_name', 'last_name'], {}, 0, 9999);
+        const contacts = await api.fetchLinkOptions('Contact', ['name', 'first_name', 'last_name', 'creation']);
         options = contacts.map(item => ({
           value: item.name,
-          label: `${item.first_name || ''} ${item.last_name || ''} (${item.name})`
+          label: `${item.first_name || ''} ${item.last_name || ''} (${item.name})`,
+          creation: item.creation
         }));
       } else {
-        // Fetch all records with a high limit (9999)
-        const items = await api.fetchLinkOptions(field.options, ['name'], {}, 0, 9999);
+        // Fetch all records with limit 0
+        const items = await api.fetchLinkOptions(field.options, ['name', 'creation']);
         options = items.map(item => ({
           value: item.name,
-          label: item.name
+          label: item.name,
+          creation: item.creation
         }));
+      }
+      
+      // Sort by creation date (newest first) if available
+      if (options.length > 0 && options[0].creation) {
+        options.sort((a, b) => {
+          if (!a.creation) return 1;
+          if (!b.creation) return -1;
+          return new Date(b.creation) - new Date(a.creation);
+        });
       }
       
       linkFieldOptions.value[field.fieldname] = options;
@@ -788,6 +1132,11 @@ const uploadFiles = async () => {
 
 // Handle field changes
 const handleFieldChange = (payload) => {
+  // Remove field from invalid fields list if it was previously invalid
+  if (invalidFields.value.includes(payload.fieldname)) {
+    invalidFields.value = invalidFields.value.filter(f => f !== payload.fieldname);
+  }
+  
   emit('field-change', payload);
 };
 
@@ -820,6 +1169,13 @@ watch(() => props.docname, (newDocname) => {
   }
 });
 
+// Add a watch for userPermissions to ensure values are applied when permissions change
+watch(userPermissions, () => {
+  if (props.mode !== 'edit') {
+    applyUserPermissionsToFormData();
+  }
+}, { deep: true });
+
 defineExpose({
   setSubmitting(value) {
     submitting.value = value;
@@ -838,10 +1194,20 @@ defineExpose({
 onMounted(async () => {
   console.log(`FormView mounted for ${props.doctype} in ${props.mode} mode`);
   
+  // Fetch user permissions first
+  await fetchUserPermissions();
+  
+  // Then fetch link field options
   await fetchLinkFieldOptions();
   
   if ((props.mode === 'edit' || props.mode === 'view') && props.docname) {
-    loadDocument();
+    await loadDocument();
+  } else {
+    // Apply user permissions again after everything is loaded
+    nextTick(() => {
+      processDateDefaults();
+      applyUserPermissionsToFormData(); // Apply again to ensure values are set
+    });
   }
 });
 </script>
@@ -865,8 +1231,6 @@ onMounted(async () => {
   max-height: 300px;
   overflow-y: auto;
 }
-
-
 
 .field-container {
   margin-bottom: 1.25rem;
@@ -916,7 +1280,6 @@ textarea,
     margin-bottom: 0.25rem;
   }
   
-  /* Make buttons easier to tap on mobile */
   button {
     min-height: 2.75rem;
   }
@@ -932,6 +1295,4 @@ textarea,
         height: 50%;
     }
 }
-
-
 </style>
