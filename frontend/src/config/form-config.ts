@@ -31,7 +31,7 @@ export const HIDDEN_FIELDS = [
   "email_account",
   "via_customer_portal",
   "subject_section",
-  "custom_qc_count","custom_qc_rework_count","custom_client_rework_count","custom_client_change_count_"
+  "custom_qc_count","custom_qc_rework_count","custom_client_rework_count","custom_client_change_count_","sla_resolution_by"
 
   // "custom_demo_name",
 ]
@@ -41,28 +41,16 @@ export const HIDDEN_FIELDS = [
  */
 export const additionalHiddenFields: string[] = []
 
-/**
- * Get the complete list of hidden fields
- * @returns {string[]} Array of field names to hide
- */
 export const getHiddenFields = (): string[] => {
   return [...HIDDEN_FIELDS, ...additionalHiddenFields]
 }
 
-/**
- * Add a field to the hidden fields list
- * @param {string} fieldname - The field name to hide
- */
 export const hideField = (fieldname: string): void => {
   if (!additionalHiddenFields.includes(fieldname)) {
     additionalHiddenFields.push(fieldname)
   }
 }
 
-/**
- * Remove a field from the hidden fields list
- * @param {string} fieldname - The field name to show
- */
 export const showField = (fieldname: string): void => {
   const index = additionalHiddenFields.indexOf(fieldname)
   if (index !== -1) {

@@ -19,7 +19,6 @@
           <div class="bg-white rounded-xl shadow-md p-6 h-full">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-semibold text-gray-800">Issue Statistics</h3>
-              <div class="text-sm text-gray-500">Updated just now</div>
             </div>
             <div class="h-[300px] md:h-[350px]">
               <IssueStatusChart :statusCounts="statusCounts" />

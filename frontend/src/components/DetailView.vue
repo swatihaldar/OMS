@@ -1440,11 +1440,9 @@ watch(() => props.doctype, async () => {
   }
 }
 
-/* Improved mobile styling */
 @media (max-width: 640px) {
   .prose {
     font-size: 0.875rem;
   }
 }
 </style>
-

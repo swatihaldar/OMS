@@ -345,13 +345,7 @@
     <div class="sticky bottom-0 z-10 bg-white p-4 md:p-6 border-t">
   <slot name="actions">
     <div class="flex flex-wrap gap-3">
-      <button
-        type="button"
-        @click="cancelForm"
-        class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-      >
-        Cancel
-      </button>
+     
       <button
         v-if="mode === 'edit' && !isReadOnly"
         type="button"
@@ -910,7 +904,7 @@ textarea,
   textarea,
   .ql-toolbar {
     min-height: 2.75rem;
-    font-size: 16px; /* Prevent zoom on iOS */
+    font-size: 16px; 
   }
 
   .field-container {

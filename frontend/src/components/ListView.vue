@@ -201,7 +201,8 @@
         Previous
       </button>
       <span class="text-sm text-gray-600">
-        Page {{ currentPage }} of {{ totalPages }}
+        Page {{ currentPage }} of {{ totalPages }} 
+        <!-- ({{ totalRecords }} records) -->
       </span>
       <button
         @click="nextPage"
@@ -279,6 +280,8 @@ const showFilterPanel = ref(false);
 const currentPage = ref(1);
 const pageSize = ref(20);
 const totalPages = ref(1);
+const totalRecords = ref(0);
+const allRecords = ref([]); // Store all fetched records
 
 // Computed properties
 const doctypeRoute = computed(() => {
@@ -472,7 +475,8 @@ const fetchLinkFieldOptions = async () => {
   }
 };
 
-const fetchRecords = async () => {
+// Fetch all records first, then handle pagination locally
+const fetchAllRecords = async () => {
   loading.value = true;
   try {
     const filters = { ...props.filters };
@@ -515,19 +519,27 @@ const fetchRecords = async () => {
       searchConditions.push([props.doctype, props.titleField, 'like', `%${query}%`]);
     }
 
-    // Fetch records
+    console.log(`Fetching all records with filters:`, filters);
+
+    // Fetch all records (with a high limit)
     const result = await api.fetchDocumentList({
       doctype: props.doctype,
       fields: ['*'],
       filters: filters,
       orFilters: searchConditions.length > 0 ? searchConditions : undefined,
-      start: (currentPage.value - 1) * pageSize.value,
-      limit: pageSize.value,
+      limit: 1000, // Set a high limit to get all records
       orderBy: sortOption.value
     });
     
-    records.value = result.records;
-    totalPages.value = Math.ceil(result.totalCount / pageSize.value);
+    // Store all records
+    allRecords.value = result.records;
+    totalRecords.value = result.records.length;
+    totalPages.value = Math.ceil(totalRecords.value / pageSize.value);
+    
+    console.log(`Fetched ${allRecords.value.length} total records. Pages: ${totalPages.value}`);
+    
+    // Apply pagination locally
+    updateDisplayedRecords();
     
   } catch (error) {
     console.error(`Error fetching ${props.doctype} records:`, error);
@@ -535,6 +547,19 @@ const fetchRecords = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// Update displayed records based on current page
+const updateDisplayedRecords = () => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = Math.min(start + pageSize.value, allRecords.value.length);
+  
+  console.log(`Updating displayed records for page ${currentPage.value}, start: ${start}, end: ${end}`);
+  
+  // Get the slice of records for the current page
+  records.value = allRecords.value.slice(start, end);
+  
+  console.log(`Displaying ${records.value.length} records for page ${currentPage.value}`);
 };
 
 const applyUserPermissionsToFilters = (filters) => {
@@ -674,7 +699,7 @@ const handleSearch = () => {
   clearTimeout(window.searchTimeout);
   window.searchTimeout = setTimeout(() => {
     currentPage.value = 1;
-    fetchRecords();
+    fetchAllRecords();
   }, 300);
 };
 
@@ -691,26 +716,26 @@ const resetFilters = () => {
   
   showFilterPanel.value = false;
   currentPage.value = 1;
-  fetchRecords();
+  fetchAllRecords();
 };
 
 const applyFilters = () => {
   showFilterPanel.value = false;
   currentPage.value = 1;
-  fetchRecords();
+  fetchAllRecords();
 };
 
 const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
-    fetchRecords();
+    updateDisplayedRecords();
   }
 };
 
 const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++;
-    fetchRecords();
+    updateDisplayedRecords();
   }
 };
 
@@ -736,7 +761,7 @@ onMounted(async () => {
     await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
-    await fetchRecords();
+    await fetchAllRecords();
   } catch (error) {
     console.error('Error initializing component:', error);
     error.value = 'Failed to initialize component';
@@ -747,19 +772,21 @@ onMounted(async () => {
 
 watch(sortOption, () => {
   currentPage.value = 1;
-  fetchRecords();
+  fetchAllRecords();
 });
 
 watch(() => props.doctype, async () => {
   loading.value = true;
   formFields.value = [];
   records.value = [];
+  allRecords.value = [];
+  currentPage.value = 1;
   
   try {
     await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
-    await fetchRecords();
+    await fetchAllRecords();
   } catch (error) {
     console.error('Error when doctype changed:', error);
   } finally {
@@ -768,7 +795,8 @@ watch(() => props.doctype, async () => {
 });
 
 watch(() => props.filters, () => {
-  fetchRecords();
+  currentPage.value = 1;
+  fetchAllRecords();
 }, { deep: true });
 
 onUnmounted(() => {
