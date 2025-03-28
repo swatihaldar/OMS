@@ -1,7 +1,3 @@
-/**
- * API utility functions for Frappe
- */
-
 // Cache for API responses
 const apiCache = {
   doctypeFields: {},
@@ -536,7 +532,145 @@ async function deleteDocument(doctype, name) {
 }
 
 /**
- * Upload a file
+ * Upload a file directly to a temporary location
+ * This method doesn't attach the file to any document
+ * @param {File} file - The file to upload
+ * @returns {Promise<string>} - The file URL
+ */
+async function uploadFileToTemp(file) {
+  try {
+    // Create a new FormData instance
+    const formData = new FormData();
+    
+    // Append the file
+    formData.append('file', file);
+    formData.append('is_private', 0);
+    
+    // Make the API request
+    const response = await fetch('/api/method/upload_file', {
+      method: 'POST',
+      body: formData
+    });
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Check if there's an error in the response
+    if (data.exc_type || data.exception) {
+      let errorMessage = 'Failed to upload file';
+      
+      if (data._server_messages) {
+        try {
+          const messages = JSON.parse(data._server_messages);
+          if (Array.isArray(messages)) {
+            const firstMessage = JSON.parse(messages[0]);
+            errorMessage = firstMessage.message || errorMessage;
+          } else {
+            errorMessage = messages.message || errorMessage;
+          }
+        } catch (e) {
+          errorMessage = data._server_messages;
+        }
+      } else if (data.exception) {
+        const match = data.exception.match(/ValidationError: (.*?)($|\n)/);
+        if (match && match[1]) {
+          errorMessage = match[1];
+        }
+      }
+      
+      console.error('Upload failed:', errorMessage);
+      throw new Error(errorMessage);
+    }
+    
+    // Check if we have a valid file_url in the response
+    if (data.message && data.message.file_url) {
+      console.log('File uploaded successfully:', data.message.file_url);
+      return data.message.file_url;
+    }
+    
+    throw new Error('Failed to upload file: No file URL returned');
+  } catch (error) {
+    console.error(`Error uploading file:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Attach a file to a document
+ * @param {string} fileUrl - The URL of the file to attach
+ * @param {string} doctype - The doctype name
+ * @param {string} docname - The document name
+ * @param {string} fieldname - The field name
+ * @returns {Promise<string>} - The file URL
+ */
+async function attachFileToDoc(fileUrl, doctype, docname, fieldname) {
+  try {
+    if (!docname || !doctype) {
+      throw new Error('Document name and type are required to attach a file');
+    }
+    
+    // Create a file doc to attach the file to the document
+    const fileDoc = {
+      doctype: 'File',
+      file_url: fileUrl,
+      attached_to_doctype: doctype,
+      attached_to_name: docname,
+      attached_to_field: fieldname,
+      is_private: 0
+    };
+    
+    const response = await fetch('/api/method/frappe.client.insert', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        doc: fileDoc
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.exc_type || data.exception) {
+      let errorMessage = 'Failed to attach file to document';
+      
+      if (data._server_messages) {
+        try {
+          const messages = JSON.parse(data._server_messages);
+          if (Array.isArray(messages)) {
+            const firstMessage = JSON.parse(messages[0]);
+            errorMessage = firstMessage.message || errorMessage;
+          } else {
+            errorMessage = messages.message || errorMessage;
+          }
+        } catch (e) {
+          errorMessage = data._server_messages;
+        }
+      } else if (data.exception) {
+        const match = data.exception.match(/ValidationError: (.*?)($|\n)/);
+        if (match && match[1]) {
+          errorMessage = match[1];
+        }
+      }
+      
+      console.error('Attachment failed:', errorMessage);
+      throw new Error(errorMessage);
+    }
+    
+    if (data.message && data.message.file_url) {
+      console.log('File attached successfully:', data.message.file_url);
+      return data.message.file_url;
+    }
+    
+    return fileUrl;
+  } catch (error) {
+    console.error(`Error attaching file to document:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Upload a file and attach it to a document
  * @param {File} file - The file to upload
  * @param {string} doctype - The doctype name
  * @param {string} fieldname - The field name
@@ -545,30 +679,19 @@ async function deleteDocument(doctype, name) {
  */
 async function uploadFile(file, doctype, fieldname, docname) {
   try {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('doctype', doctype)
-    formData.append('fieldname', fieldname)
+    // First, upload the file to a temporary location
+    const fileUrl = await uploadFileToTemp(file);
     
+    // If we have a docname, attach the file to the document
     if (docname) {
-      formData.append('docname', docname)
+      return await attachFileToDoc(fileUrl, doctype, docname, fieldname);
     }
     
-    const response = await fetch('/api/method/upload_file', {
-      method: 'POST',
-      body: formData
-    })
-    
-    const data = await response.json()
-    
-    if (data.message && data.message.file_url) {
-      return data.message.file_url
-    }
-    
-    throw new Error('Failed to upload file')
+    // Otherwise, just return the file URL
+    return fileUrl;
   } catch (error) {
-    console.error(`Error uploading file:`, error)
-    throw error
+    console.error(`Error in uploadFile:`, error);
+    throw error;
   }
 }
 
@@ -597,5 +720,7 @@ export default {
   saveDocument,
   deleteDocument,
   uploadFile,
+  uploadFileToTemp,
+  attachFileToDoc,
   clearCache,
 }

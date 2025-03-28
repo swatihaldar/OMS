@@ -12,13 +12,7 @@ const props = defineProps({
   statusCounts: {
     type: Object,
     required: true,
-    default: () => ({
-      Open: 0,
-      Replied: 0,
-      Closed: 0,
-      Resolved: 0,
-      'On Hold': 0
-    })
+    default: () => ({})
   }
 });
 
@@ -26,17 +20,89 @@ const chartRef = ref(null);
 let chart = null;
 let resizeObserver = null;
 const currentUser = ref('');
+const statusOptions = ref([]);
+const statusColors = ref({});
 
+const colorPalette = [
+  '#1E40AF', // Rich Blue
+  '#2563EB', // Vivid Blue
+  '#3B82F6', // Bright Blue
+  '#60A5FA', // Soft Blue
+  '#38BDF8', // Sky Blue
+  '#0EA5E9', // Cyan
+  '#06B6D4', // Aqua
+  '#14B8A6', // Teal
+  '#10B981', // Emerald Green
+  '#22C55E', // Soft Green
+  '#FACC15', // Warm Yellow
+  '#FB923C', // Soft Orange
+  '#F97316', // Deep Orange
+  '#EF4444', // Coral Red
+  '#EC4899', // Soft Pink
+  '#A855F7', // Vibrant Purple
+  '#7C3AED', // Deep Purple
+  '#64748B', // Slate Gray
+  '#94A3B8', // Light Gray
+];
+
+
+
+const fetchStatusOptions = async () => {
+  try {
+    const response = await fetch('/api/method/frappe.desk.form.load.getdoctype', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctype: 'Issue' })
+    });
+    
+    const data = await response.json();
+    
+    if (data.message && data.message.docs && data.message.docs[0]) {
+      const doctypeDef = data.message.docs[0];
+      const statusField = doctypeDef.fields.find(field => field.fieldname === 'status');
+      
+      if (statusField && statusField.options) {
+        const options = statusField.options.split('\n').filter(opt => opt.trim());
+        statusOptions.value = options;
+        console.log('Available status options:', options);
+
+        assignColorsToStatuses(options);
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching status options:', error);
+    statusOptions.value = ['Open', 'Replied', 'Closed', 'Resolved', 'On Hold'];
+    assignColorsToStatuses(statusOptions.value);
+  }
+};
+
+
+const assignColorsToStatuses = (options) => {
+  const predefinedColors = {
+    'Open': '#FF9F43',
+    'Replied': '#7367F0',
+    'Closed': '#28C76F',
+    'Resolved': '#00CFE8',
+    'On Hold': '#EA5455'
+  };
+  
+  const newStatusColors = {};
+  
+  options.forEach((status, index) => {
+    if (predefinedColors[status]) {
+      newStatusColors[status] = predefinedColors[status];
+    } else {
+      const colorIndex = index % colorPalette.length;
+      newStatusColors[status] = colorPalette[colorIndex];
+    }
+  });
+  
+  statusColors.value = newStatusColors;
+  console.log('Status colors:', statusColors.value);
+};
 
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'Open': return '#FF9F43'; 
-    case 'Replied': return '#7367F0'; 
-    case 'Closed': return '#28C76F'; 
-    case 'Resolved': return '#00CFE8'; 
-    case 'On Hold': return '#EA5455'; 
-    default: return '#9CA3AF'; 
-  }
+  return statusColors.value[status] || '#9CA3AF';
 };
 
 const createChart = async () => {
@@ -53,6 +119,9 @@ const createChart = async () => {
       currentUser.value = userData.message;
     }
 
+    if (statusOptions.value.length === 0) {
+      await fetchStatusOptions();
+    }
 
     const response = await fetch('/api/method/frappe.client.get_list', {
       method: 'POST',
@@ -67,33 +136,53 @@ const createChart = async () => {
     });
 
     const data = await response.json();
-    const userStatusCounts = {
-      Open: 0,
-      Replied: 0,
-      Closed: 0,
-      Resolved: 0,
-      'On Hold': 0
-    };
+    
+    const userStatusCounts = {};
+    statusOptions.value.forEach(status => {
+      userStatusCounts[status] = 0;
+    });
 
     if (data.message) {
       data.message.forEach(issue => {
-        if (userStatusCounts.hasOwnProperty(issue.status)) {
+        if (issue.status) {
+          if (!userStatusCounts.hasOwnProperty(issue.status)) {
+            userStatusCounts[issue.status] = 0;
+            
+            if (!statusOptions.value.includes(issue.status)) {
+              statusOptions.value.push(issue.status);
+              
+              if (!statusColors.value[issue.status]) {
+                const newIndex = statusOptions.value.length - 1;
+                const colorIndex = newIndex % colorPalette.length;
+                statusColors.value[issue.status] = colorPalette[colorIndex];
+              }
+            }
+          }
+          
           userStatusCounts[issue.status]++;
         }
       });
     }
 
-    const total = Object.values(userStatusCounts).reduce((sum, count) => sum + count, 0);
-    const colors = Object.keys(userStatusCounts).map(status => getStatusColor(status));
+    const filteredStatusCounts = {};
+    Object.keys(userStatusCounts).forEach(status => {
+      if (userStatusCounts[status] > 0) {
+        filteredStatusCounts[status] = userStatusCounts[status];
+      }
+    });
 
-    // Create the chart with improved styling
+    const statuses = Object.keys(filteredStatusCounts);
+    const counts = Object.values(filteredStatusCounts);
+    const colors = statuses.map(status => getStatusColor(status));
+    const total = counts.reduce((sum, count) => sum + count, 0);
+
     const ctx = chartRef.value.getContext('2d');
     chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: Object.keys(userStatusCounts),
+        labels: statuses,
         datasets: [{
-          data: Object.values(userStatusCounts),
+          data: counts,
           backgroundColor: colors,
           borderWidth: 2,
           borderColor: '#ffffff',
@@ -199,7 +288,9 @@ const handleResize = () => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchStatusOptions();
+  
   createChart();
   
   resizeObserver = new ResizeObserver(() => {
@@ -230,4 +321,3 @@ onUnmounted(() => {
 
 watch(() => props.statusCounts, createChart, { deep: true });
 </script>
-

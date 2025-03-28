@@ -61,7 +61,7 @@
                 
                 <!-- Image fields -->
                 <div v-else-if="field.fieldtype === 'Attach Image' && formData[field.fieldname]" class="mt-1">
-                  <img :src="formData[field.fieldname]" alt="Attached Image" class="h-48 w-auto rounded-lg" />
+                  <img :src="formData[field.fieldname]" alt="Attached Image" class="h-48 w-auto rounded-lg object-cover" />
                 </div>
                 
                 <!-- Attachment fields -->
@@ -88,7 +88,12 @@
       <form v-else @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Error Message -->
         <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 relative">
-          <span class="block sm:inline">{{ errorMessage }}</span>
+          <div class="flex items-center">
+            <svg class="h-5 w-5 mr-2 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span class="block sm:inline">{{ formatErrorMessage(errorMessage) }}</span>
+          </div>
           <button @click="errorMessage = ''" class="absolute top-0 bottom-0 right-0 px-4 py-3">
             <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" 
@@ -125,7 +130,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -191,7 +196,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -227,7 +232,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -244,9 +249,6 @@
                   }"
                   @input="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
                 />
-                <!-- <div v-if="field.length || field.fieldtype === 'Data'" class="text-xs text-gray-500 mt-1">
-                  {{ formData[field.fieldname] ? formData[field.fieldname].length : 0 }}/{{ field.length || 140 }} characters
-                </div> -->
               </div>
 
               <!-- Long Text fields -->
@@ -260,7 +262,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -289,7 +291,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -320,7 +322,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -358,7 +360,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                   </label>
@@ -376,7 +378,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -408,7 +410,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -429,7 +431,7 @@
                         <input
                           type="file"
                           class="sr-only"
-                          accept="image"
+                          accept="image/*"
                           @change="(e) => handleFileUpload(e, field.fieldname)"
                         />
                         
@@ -441,7 +443,7 @@
                 </div>
 
                 <div v-else-if="getImagePreview(field.fieldname)" class="mt-1 relative">
-                  <img :src="getImagePreview(field.fieldname)" alt="Preview" class="h-48 w-auto rounded-lg" />
+                  <img :src="getImagePreview(field.fieldname)" alt="Preview" class="h-48 w-auto rounded-lg object-cover" />
                   <button 
                     v-if="!(field.read_only || isReadOnly)"
                     type="button" 
@@ -466,7 +468,7 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      {{ field.description }}
+                      <span v-html="field.description"></span>
                     </div>
                   </span>
                 </label>
@@ -630,6 +632,7 @@ const invalidFields = ref([]);
 const linkSearchQueries = ref({});
 const activeLinkDropdown = ref(null);
 const userPermissions = ref([]);
+const tempFileUrls = ref({}); // Store temporary file URLs before document is saved
 
 // Computed properties
 const formData = computed({
@@ -764,6 +767,11 @@ const getImagePreview = (fieldname) => {
     return filePreviewUrls.value[fieldname];
   }
   
+  // If we have a temporary file URL, use that
+  if (tempFileUrls.value[fieldname]) {
+    return tempFileUrls.value[fieldname];
+  }
+  
   // Otherwise, if we have a file URL in the form data, use that
   if (formData.value[fieldname]) {
     return formData.value[fieldname];
@@ -844,6 +852,34 @@ const isFieldInvalid = (fieldname) => {
   return invalidFields.value.includes(fieldname);
 };
 
+// Format error messages for user-friendly display
+const formatErrorMessage = (message) => {
+  if (typeof message !== 'string') return 'An error occurred';
+  
+  if (message.includes('Attached To Name must be a string or an integer')) {
+    return 'Unable to attach file to this document. Please save the document first.';
+  }
+  
+  if (message.includes('ValidationError')) {
+    // Extract the actual error message from the ValidationError
+    const match = message.match(/ValidationError: (.*?)($|\n)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  if (message.includes('File size exceeded')) {
+    return 'The file is too large. Please upload a smaller file (maximum 5MB).';
+  }
+  
+  if (message.includes('Failed to upload file')) {
+    return 'Unable to upload the file. Please try again or use a different file.';
+  }
+  
+  // Return the original message if no specific formatting is needed
+  return message;
+};
+
 // File handling
 const handleFileUpload = (event, fieldname) => {
   const file = event.target.files[0];
@@ -855,42 +891,120 @@ const handleDrop = (event, fieldname) => {
   handleFile(file, fieldname);
 };
 
-const handleFile = (file, fieldname) => {
+// Modified handleFile function to resize large images
+const handleFile = async (file, fieldname) => {
   if (!file) return;
 
   // Check file size (5MB limit)
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  if (file.size > MAX_FILE_SIZE) {
-    errorMessage.value = 'File size must be less than 5MB';
-    return;
-  }
-
+  
   // Check if it's an image field
-  if (fieldname.includes('image') || props.fields.find(f => f.fieldname === fieldname && f.fieldtype === 'Attach Image')) {
+  const isImageField = fieldname.includes('image') || props.fields.find(f => f.fieldname === fieldname && f.fieldtype === 'Attach Image');
+  
+  if (isImageField) {
     if (!file.type.startsWith('image/')) {
       errorMessage.value = 'Please upload an image file';
       return;
     }
     
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      filePreviewUrls.value[fieldname] = e.target.result;
-      fileAttachments.value[fieldname] = file;
-      formData.value[fieldname] = null; 
-      emit('field-change', { fieldname, value: null, file });
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Resize large images before uploading
+      if (file.size > MAX_FILE_SIZE) {
+        const resizedFile = await resizeImage(file, 1200); // Max width 1200px
+        if (resizedFile.size <= MAX_FILE_SIZE) {
+          // Use the resized file
+          showImagePreview(resizedFile, fieldname);
+          return;
+        } else {
+          errorMessage.value = 'Image is too large. Please use a smaller image.';
+          return;
+        }
+      }
+      
+      // For smaller images, just show the preview
+      showImagePreview(file, fieldname);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      errorMessage.value = 'Error processing image: ' + error.message;
+    }
   } else {
     // For other attachments
+    if (file.size > MAX_FILE_SIZE) {
+      errorMessage.value = 'File size must be less than 5MB';
+      return;
+    }
+    
     fileAttachments.value[fieldname] = file;
     formData.value[fieldname] = null; 
     emit('field-change', { fieldname, value: null, file });
   }
 };
 
+// Function to show image preview
+const showImagePreview = (file, fieldname) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    filePreviewUrls.value[fieldname] = e.target.result;
+    fileAttachments.value[fieldname] = file;
+    formData.value[fieldname] = null; 
+    emit('field-change', { fieldname, value: null, file });
+  };
+  reader.readAsDataURL(file);
+};
+
+// Function to resize large images
+const resizeImage = (file, maxWidth) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      // Only resize if the image is wider than maxWidth
+      if (img.width <= maxWidth) {
+        resolve(file); // No need to resize
+        return;
+      }
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Calculate new dimensions while maintaining aspect ratio
+      const ratio = maxWidth / img.width;
+      const width = maxWidth;
+      const height = img.height * ratio;
+      
+      // Set canvas dimensions
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw resized image on canvas
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert canvas to Blob
+      canvas.toBlob((blob) => {
+        if (blob) {
+          // Create a new File object from the blob
+          const resizedFile = new File([blob], file.name, {
+            type: file.type,
+            lastModified: Date.now()
+          });
+          resolve(resizedFile);
+        } else {
+          reject(new Error('Failed to resize image'));
+        }
+      }, file.type);
+    };
+    
+    img.onerror = () => {
+      reject(new Error('Failed to load image'));
+    };
+  });
+};
+
 const removeFile = (fieldname) => {
   delete filePreviewUrls.value[fieldname];
   delete fileAttachments.value[fieldname];
+  delete tempFileUrls.value[fieldname];
   formData.value[fieldname] = null;
   emit('field-change', { fieldname, value: null, file: null });
 };
@@ -915,7 +1029,6 @@ const processDateDefaults = () => {
     formData.value.opening_date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   }
 };
-
 
 // Fetch user permissions
 const fetchUserPermissions = async () => {
@@ -975,8 +1088,51 @@ const applyUserPermissionsToFormData = () => {
   });
 };
 
+// Upload files to temporary location first
+const uploadFilesToTemp = async () => {
+  const uploadedFiles = {};
+  
+  for (const [fieldname, file] of Object.entries(fileAttachments.value)) {
+    try {
+      // Upload file to temporary location
+      const fileUrl = await api.uploadFileToTemp(file);
+      tempFileUrls.value[fieldname] = fileUrl;
+      uploadedFiles[fieldname] = fileUrl;
+    } catch (error) {
+      console.error(`Error uploading file for ${fieldname}:`, error);
+      errorMessage.value = formatErrorMessage(error.message) || `Error uploading file: ${file.name}`;
+      throw error;
+    }
+  }
+  
+  return uploadedFiles;
+};
+
+// Attach files to document after it's saved
+const attachFilesToDoc = async (docname) => {
+  if (!docname) return {};
+  
+  const attachedFiles = {};
+  
+  for (const [fieldname, fileUrl] of Object.entries(tempFileUrls.value)) {
+    try {
+      // Attach the file to the document
+      const attachedUrl = await api.attachFileToDoc(fileUrl, props.doctype, docname, fieldname);
+      attachedFiles[fieldname] = attachedUrl;
+      
+      // Update the form data with the attached file URL
+      formData.value[fieldname] = attachedUrl;
+    } catch (error) {
+      console.error(`Error attaching file for ${fieldname}:`, error);
+      errorMessage.value = formatErrorMessage(error.message) || `Error attaching file to document`;
+    }
+  }
+  
+  return attachedFiles;
+};
+
 // Form actions
-const handleSubmit = () => {
+const handleSubmit = async () => {
   errorMessage.value = '';
   invalidFields.value = [];
   
@@ -998,15 +1154,29 @@ const handleSubmit = () => {
   if (!errorMessage.value) {
     submitting.value = true;
     
-    const isNew = props.mode === 'add';
-    
-    emit('submit', { 
-      formData: formData.value, 
-      files: fileAttachments.value,
-      isNew,
-      doctype: props.doctype,
-      docname: props.docname
-    });
+    try {
+      const isNew = props.mode === 'add';
+      const hasFiles = Object.keys(fileAttachments.value).length > 0;
+      
+      // For new documents with files, upload files to temp location first
+      if (hasFiles) {
+        await uploadFilesToTemp();
+      }
+      
+      // Submit the form data
+      emit('submit', { 
+        formData: formData.value, 
+        files: {}, // Don't send files directly
+        isNew,
+        doctype: props.doctype,
+        docname: props.docname,
+        tempFileUrls: tempFileUrls.value,
+        attachFilesToDoc: hasFiles ? attachFilesToDoc : null
+      });
+    } catch (error) {
+      submitting.value = false;
+      errorMessage.value = formatErrorMessage(error.message) || 'An error occurred while saving';
+    }
   }
 };
 
@@ -1036,7 +1206,7 @@ const deleteDocument = async () => {
     emit('delete', props.docname);
   } catch (error) {
     console.error(`Error deleting ${props.doctype}:`, error);
-    errorMessage.value = `Error deleting ${props.doctype}: ${error.message}`;
+    errorMessage.value = formatErrorMessage(error.message) || `Error deleting ${props.doctype}`;
   } finally {
     submitting.value = false;
   }
@@ -1061,7 +1231,7 @@ const loadDocument = async () => {
     emit('load', data);
   } catch (error) {
     console.error(`Error loading ${props.doctype}:`, error);
-    errorMessage.value = `Error loading ${props.doctype}: ${error.message}`;
+    errorMessage.value = formatErrorMessage(error.message) || `Error loading ${props.doctype}`;
   } finally {
     loading.value = false;
   }
@@ -1117,22 +1287,6 @@ const fetchLinkFieldOptions = async () => {
       console.error(`Error fetching options for ${field.fieldname}:`, error);
     }
   }
-};
-
-const uploadFiles = async () => {
-  const uploadedFiles = {};
-  
-  for (const [fieldname, file] of Object.entries(fileAttachments.value)) {
-    try {
-      const fileUrl = await api.uploadFile(file, props.doctype, fieldname, props.docname);
-      uploadedFiles[fieldname] = fileUrl;
-    } catch (error) {
-      console.error(`Error uploading file for ${fieldname}:`, error);
-      throw error;
-    }
-  }
-  
-  return uploadedFiles;
 };
 
 // Handle field changes
@@ -1191,7 +1345,8 @@ defineExpose({
   getFiles() {
     return fileAttachments.value;
   },
-  uploadFiles,
+  uploadFilesToTemp,
+  attachFilesToDoc,
   loadDocument,
   deleteDocument
 });

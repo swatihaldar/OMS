@@ -33,7 +33,8 @@ export const HIDDEN_FIELDS = [
   "custom_qc_rework_count",
   "custom_client_rework_count",
   "custom_client_change_count_",
-  "sla_resolution_by"
+  "sla_resolution_by",
+  "customer"
 
 ]
 
