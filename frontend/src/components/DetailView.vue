@@ -30,7 +30,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 class="text-xl font-semibold text-gray-900">{{ recordTitle }}</h1>
+            <h1 class="text-xl font-semibold text-gray-900">{{ recordTitle }} </h1>
           </div>
           
           <div class="flex items-center gap-2">
@@ -600,7 +600,7 @@
         </div>
 
         <!-- Back Button -->
-        <div class="p-4 border-t border-gray-200 max-w-3xl mx-auto">
+        <!-- <div class="p-4 border-t border-gray-200 max-w-3xl mx-auto">
           <button
             @click="$router.push(`/${doctypeRoute}`)"
             class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
@@ -621,7 +621,7 @@
             </svg>
             Back to List
           </button>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -763,11 +763,17 @@ const doctypeRoute = computed(() => {
 })
 
 const recordTitle = computed(() => {
-  if (record.value && record.value[props.titleField]) {
-    return record.value[props.titleField]
+  if (record.value) {
+    if (record.value.name) {
+      return record.value.name;
+    }
+    if (props.titleField && record.value[props.titleField]) {
+      return record.value[props.titleField];
+    }
   }
-  return `${props.doctype} ${props.recordId}`
-})
+  return `${props.doctype} ${props.recordId}`;
+});
+
 
 // Check if there are any linked records
 const hasLinkedRecords = computed(() => {

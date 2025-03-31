@@ -537,7 +537,7 @@
           <button
             @click="handleSubmit"
             :disabled="submitting || isReadOnly"
-            class="flex-1 bg-gray-900 text-white py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:bg-gray-800"
+            class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-800"
           >
             <span v-if="submitting" class="flex items-center justify-center">
               <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -713,25 +713,38 @@ const getColumnClass = (index) => {
   return 'col-span-1';
 };
 
+const sortedOptionsCache = ref({});
+
 const getOptionsForField = (field) => {
-  if (props.fieldOptions[field.fieldname]) {
-    return props.fieldOptions[field.fieldname];
-  }
+  const cacheKey = field.fieldname;
   
-  if (field.fieldtype === 'Link' && linkFieldOptions.value[field.fieldname]) {
-    return linkFieldOptions.value[field.fieldname];
-  }
-  
-  if (field.fieldtype === 'Select') {
-    if (field.options) {
-      return field.options.split('\n').map(option => ({
-        value: option,
-        label: option
-      }));
-    }
+  // Return cached sorted options if available
+  if (sortedOptionsCache.value[cacheKey]) {
+    return sortedOptionsCache.value[cacheKey];
   }
 
-  return [];
+  let options = [];
+  
+  if (props.fieldOptions[field.fieldname]) {
+    options = props.fieldOptions[field.fieldname];
+  } else if (field.fieldtype === 'Link' && linkFieldOptions.value[field.fieldname]) {
+    options = linkFieldOptions.value[field.fieldname];
+  } else if (field.fieldtype === 'Select' && field.options) {
+    options = field.options.split('\n').map(option => ({
+      value: option,
+      label: option
+    }));
+  }
+
+  // Sort and cache the results
+  const sortedOptions = [...options].sort((a, b) => {
+    const labelA = a.label?.toLowerCase() || '';
+    const labelB = b.label?.toLowerCase() || '';
+    return labelA.localeCompare(labelB);
+  });
+
+  sortedOptionsCache.value[cacheKey] = sortedOptions;
+  return sortedOptions;
 };
 
 // Filtered options for link fields with search

@@ -22,15 +22,15 @@
         <span class="font-medium">View Issues</span>
       </button>
       
-      <!-- <button @click="$router.push('/profile')" 
-              class="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl p-4 flex items-center transition-all hover:from-purple-600 hover:to-purple-700 hover:shadow-md">
-        <div class="bg-purple-500 bg-opacity-30 p-2 rounded-lg mr-4">
+      <button @click="$router.push('/task')" 
+              class="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl p-4 flex items-center transition-all hover:from-green-600 hover:to-green-700 hover:shadow-md">
+        <div class="bg-green-500 bg-opacity-30 p-2 rounded-lg mr-4">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
         </div>
-        <span class="font-medium">My Profile</span>
-      </button> -->
+        <span class="font-medium">View Tasks</span>
+      </button>
     </div>
   </div>
 </template>

@@ -256,25 +256,27 @@
         </div>
       </div>
 
-      <!-- Fixed Action Buttons -->
-      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
-        <div class="flex justify-between gap-3">
-          <button
-            @click="cancel"
-            class="w-1/2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            @click="save"
-            class="w-1/2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-            :disabled="isSaving"
-          >
-            <div v-if="isSaving" class="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-            Save
-          </button>
-        </div>
-      </div>
+     <!-- Fixed Action Buttons -->
+<div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex justify-between gap-3">
+      <button
+        @click="cancel"
+        class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        @click="save"
+        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+        :disabled="isSaving"
+      >
+        <div v-if="isSaving" class="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+        Save
+      </button>
+    </div>
+  </div>
+</div>
     </div>
   </div>
 </template>
@@ -515,13 +517,20 @@ const getFilteredLinkOptions = (field) => {
   const options = dynamicLinkOptions.value[field.fieldname] || props.linkFieldOptions[field.fieldname] || [];
   const searchQuery = linkSearchQueries.value[field.fieldname] || '';
 
-  if (!searchQuery) {
-    return options;
+  // Filter first
+  let filteredOptions = options;
+  if (searchQuery) {
+    filteredOptions = options.filter((option) =>
+      option.label.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }
 
-  return options.filter((option) =>
-    option.label.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Then sort alphabetically by label
+  return filteredOptions.sort((a, b) => {
+    const labelA = a.label?.toLowerCase() || '';
+    const labelB = b.label?.toLowerCase() || '';
+    return labelA.localeCompare(labelB);
+  });
 };
   
 const getSelectOptions = (field) => {
