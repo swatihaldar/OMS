@@ -1,16 +1,14 @@
 <template>
-  <div class="p-4 max-w-4xl mx-auto">
+  <div class="bg-white min-h-screen">
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center py-8">
-      <div
-        class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-      ></div>
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
     </div>
 
     <!-- Error State -->
     <div
       v-else-if="error"
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 mx-4"
     >
       <p>{{ error }}</p>
       <button
@@ -24,170 +22,128 @@
     <!-- Detail View -->
     <div v-else>
       <!-- Header with Actions -->
-      <div class="bg-white rounded-lg shadow-md p-4 md:p-6 mb-4">
-        <div
-          class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        >
-          <div>
-            <h2 class="text-xl md:text-2xl font-semibold text-gray-900">
-              <span v-if="!isEditing">{{ recordTitle }}</span>
-              <input
-                v-else
-                v-model="editedRecord[titleField]"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </h2>
-            <div class="flex flex-wrap items-center gap-2 mt-2">
-              <span class="text-sm text-gray-500"
-                >{{ doctype }} ID: {{ recordId }}</span
-              >
-              <span
-                v-if="record.status"
-                class="px-2 py-0.5 rounded-full text-xs font-medium"
-                :class="getStatusClass(record.status)"
-              >
-                {{ record.status }}
-              </span>
-            </div>
+      <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="px-4 py-3 max-w-3xl mx-auto flex items-center justify-between">
+          <div class="flex items-center">
+            <button @click="$router.back()" class="mr-3 text-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 class="text-xl font-semibold text-gray-900">{{ recordTitle }}</h1>
           </div>
-          <!-- Action Buttons -->
-<div class="flex gap-2 self-start">
-  <button
-    v-if="!isEditing && canEdit"
-    @click="startEditing"
-    class="w-10 h-10 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors flex items-center justify-center"
-    title="Edit"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-    </svg>
-  </button>
+          
+          <div class="flex items-center gap-2">
+            <button
+              v-if="!isEditing && canEdit"
+              @click="startEditing"
+              class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              title="Edit"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            
+            <button
+              v-if="!isEditing && canDelete"
+              @click="confirmDelete"
+              class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              title="Delete"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-5 0h10" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      
 
-  <button
-    v-if="isEditing"
-    @click="saveChanges"
-    class="w-10 h-10 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors flex items-center justify-center"
-    :disabled="isSaving"
-    title="Save"
-  >
-    <svg
-      v-if="!isSaving"
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-5 w-5"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-    >
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-    </svg>
-    <div
-      v-if="isSaving"
-      class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"
-    ></div>
-  </button>
-
-  <button
-    v-if="isEditing"
-    @click="cancelEditing"
-    class="w-10 h-10 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors flex items-center justify-center"
-    title="Cancel"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-    </svg>
-  </button>
-
-  <button
-    v-if="!isEditing && canDelete"
-    @click="confirmDelete"
-    class="w-10 h-10 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors flex items-center justify-center"
-    title="Delete"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-5 0h10"/>
-    </svg>
-  </button>
-</div>
-
+      <!-- Mobile Tabs -->
+      <div v-if="!isEditing" class="md:hidden border-b border-gray-200">
+        <div class="flex overflow-x-auto">
+          <button
+            v-for="(section, index) in nonEmptySections"
+            :key="index"
+            @click="activeTab = index"
+            class="px-4 py-3 text-sm font-medium whitespace-nowrap"
+            :class="
+              activeTab === index
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500'
+            "
+          >
+            {{ section.label || `Section ${index + 1}` }}
+          </button>
+          <button
+            v-if="hasLinkedRecords"
+            @click="activeTab = nonEmptySections.length"
+            class="px-4 py-3 text-sm font-medium whitespace-nowrap"
+            :class="
+              activeTab === nonEmptySections.length
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500'
+            "
+          >
+            Linked
+          </button>
+          <button
+            @click="activeTab = nonEmptySections.length + (hasLinkedRecords ? 1 : 0)"
+            class="px-4 py-3 text-sm font-medium whitespace-nowrap"
+            :class="
+              activeTab === nonEmptySections.length + (hasLinkedRecords ? 1 : 0)
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500'
+            "
+          >
+            Metadata
+          </button>
         </div>
       </div>
 
-      <!-- Record Details -->
-      <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <!-- Tabs for mobile view -->
-        <div class="md:hidden border-b">
-          <div class="flex overflow-x-auto">
-            <button
-              v-for="(section, index) in nonEmptySections"
-              :key="index"
-              @click="activeTab = index"
-              class="px-4 py-3 text-sm font-medium whitespace-nowrap"
-              :class="
-                activeTab === index
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500'
-              "
-            >
-              {{ section.label || `Section ${index + 1}` }}
-            </button>
-            <!-- Mobile view: Metadata section as last tab -->
-            <button
-              @click="activeTab = nonEmptySections.length"
-              class="px-4 py-3 text-sm font-medium whitespace-nowrap"
-              :class="
-                activeTab === nonEmptySections.length
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500'
-              "
-            >
-              Metadata
-            </button>
-          </div>
-        </div>
+      <!-- Edit Mode -->
+      <div v-if="isEditing" class="p-4 max-w-3xl mx-auto">
+        <EditForm 
+          :doctype="doctype"
+          :recordId="recordId"
+          :record="record"
+          :formFields="formFields"
+          :linkFieldOptions="linkFieldOptions"
+          :childTableFields="childTableFields"
+          @save="saveChanges"
+          @cancel="cancelEditing"
+          @upload-file="handleFileUpload"
+        />
+      </div>
 
-        <!-- Desktop view: All sections -->
-        <div class="hidden md:block p-6">
-          <template
-            v-for="(section, sectionIndex) in nonEmptySections"
-            :key="sectionIndex"
-          >
-            <div
-              :class="{
-                'border-t border-gray-200 pt-6 mt-6': sectionIndex > 0,
-              }"
-            >
-              <h3
-                v-if="section.label"
-                class="text-lg font-medium text-gray-900 mb-4"
-              >
-                {{ section.label }}
-              </h3>
+      <!-- View Mode -->
+      <div v-else>
+        <!-- Desktop View: All sections -->
+        <div class="hidden md:block max-w-3xl mx-auto p-6">
+          <div class="space-y-6">
+            <template v-for="(section, sectionIndex) in nonEmptySections" :key="sectionIndex">
+              <div :class="{ 'border-t border-gray-200 pt-6': sectionIndex > 0 }">
+                <h3 v-if="section.label" class="text-lg font-medium text-gray-900 mb-4">
+                  {{ section.label }}
+                </h3>
 
-              <!-- Render fields in this section -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <template
-                  v-for="(column, columnIndex) in section.columns"
-                  :key="columnIndex"
-                >
-                  <div class="space-y-4">
-                    <template v-for="field in column" :key="field.fieldname">
-                      <div
-                        v-if="
-                          shouldDisplayField(field) &&
-                          !isMetadataField(field.fieldname)
-                        "
-                        class="mb-4"
-                      >
-                        <div class="text-sm font-medium text-gray-500 mb-1">
-                          {{ field.label }}
-                        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <template v-for="(column, columnIndex) in section.columns" :key="columnIndex">
+                    <div class="space-y-4">
+                      <template v-for="field in column" :key="field.fieldname">
+                        <div
+                          v-if="shouldDisplayField(field) && !isMetadataField(field.fieldname)"
+                          class="mb-6"
+                        >
+                          <div class="text-sm font-medium text-gray-500 mb-1">
+                            {{ field.label }}
+                          </div>
 
-                        <!-- View Mode -->
-                        <template v-if="!isEditing">
                           <!-- Link fields -->
                           <div
                             v-if="field.fieldtype === 'Link'"
-                            class="text-gray-900"
+                            class="text-blue-600"
                           >
                             {{ getFieldDisplayValue(field) }}
                           </div>
@@ -195,7 +151,7 @@
                           <!-- Select fields -->
                           <div
                             v-else-if="field.fieldtype === 'Select'"
-                            class="text-gray-900"
+                            class="text-blue-600"
                           >
                             {{ record[field.fieldname] }}
                           </div>
@@ -211,7 +167,7 @@
                           <!-- Checkbox fields -->
                           <div
                             v-else-if="field.fieldtype === 'Check'"
-                            class="text-gray-900"
+                            class="text-blue-600"
                           >
                             <span
                               v-if="record[field.fieldname]"
@@ -252,7 +208,8 @@
                             <img
                               :src="record[field.fieldname]"
                               alt="Attached Image"
-                              class="h-48 w-auto rounded-lg object-cover"
+                              class="h-48 w-auto rounded-lg object-cover cursor-pointer"
+                              @click="openImageModal(record[field.fieldname])"
                             />
                           </div>
 
@@ -292,615 +249,344 @@
                               field.fieldtype === 'Date' ||
                               field.fieldtype === 'Datetime'
                             "
-                            class="text-gray-900"
+                            class="text-blue-600"
                           >
                             {{ formatDate(record[field.fieldname]) }}
                           </div>
 
+                          <!-- Table fields -->
+                          <div
+                            v-else-if="field.fieldtype === 'Table' && record[field.fieldname] && record[field.fieldname].length > 0"
+                            class="mt-2 overflow-x-auto"
+                          >
+                            <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
+                              <thead class="bg-gray-50">
+                                <tr>
+                                  <th v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
+                                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {{ childField.label }}
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-for="(row, rowIndex) in record[field.fieldname]" :key="rowIndex">
+                                  <td v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
+                                      class="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                                    {{ row[childField.fieldname] }}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                          <div
+                            v-else-if="field.fieldtype === 'Table' && (!record[field.fieldname] || record[field.fieldname].length === 0)"
+                            class="text-gray-500 italic"
+                          >
+                            No items
+                          </div>
+
                           <!-- Default field display -->
-                          <div v-else class="text-gray-900">
+                          <div v-else class="text-blue-600">
                             {{ record[field.fieldname] }}
                           </div>
-                        </template>
+                        </div>
+                      </template>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </template>
 
-                        <!-- Edit Mode -->
-                        <template v-else>
-                          <!-- Link fields with search -->
-                          <div
-                            v-if="field.fieldtype === 'Link'"
-                            class="relative"
-                          >
-                            <div class="relative">
-                              <input
-                                v-model="linkSearchQueries[field.fieldname]"
-                                type="text"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                @focus="openLinkDropdown(field.fieldname)"
-                                @blur="
-                                  closeLinkDropdownDelayed(field.fieldname)
-                                "
-                                placeholder="Search..."
-                              />
-                              <div
-                                class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  class="h-5 w-5 text-gray-400"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                  />
-                                </svg>
-                              </div>
-                            </div>
-
-                            <!-- Dropdown for link options -->
-                            <div
-                              v-if="activeLinkDropdown === field.fieldname"
-                              class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
-                            >
-                              <div
-                                v-for="option in getFilteredLinkOptions(field)"
-                                :key="option.value"
-                                class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
-                                @mousedown="
-                                  selectLinkOption(
-                                    field.fieldname,
-                                    option.value
-                                  )
-                                "
-                              >
-                                <span
-                                  class="block truncate"
-                                  :class="{
-                                    'font-semibold':
-                                      editedRecord[field.fieldname] ===
-                                      option.value,
-                                  }"
-                                >
-                                  {{ option.label }}
-                                </span>
-                                <span
-                                  v-if="
-                                    editedRecord[field.fieldname] ===
-                                    option.value
-                                  "
-                                  class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600"
-                                >
-                                  <svg
-                                    class="h-5 w-5"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                  >
-                                    <path
-                                      fill-rule="evenodd"
-                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                      clip-rule="evenodd"
-                                    />
-                                  </svg>
-                                </span>
-                              </div>
-                              <div
-                                v-if="
-                                  getFilteredLinkOptions(field).length === 0
-                                "
-                                class="py-2 px-3 text-gray-500 italic"
-                              >
-                                No results found
-                              </div>
-                            </div>
-                          </div>
-
-                          <!-- Select fields -->
-                          <select
-                            v-else-if="field.fieldtype === 'Select'"
-                            v-model="editedRecord[field.fieldname]"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          >
-                            <option
-                              v-for="option in getSelectOptions(field)"
-                              :key="option"
-                              :value="option"
-                            >
-                              {{ option }}
-                            </option>
-                          </select>
-
-                          <!-- Text Editor fields -->
-                          <div
-                            v-else-if="field.fieldtype === 'Text Editor'"
-                            class="mt-1"
-                          >
-                            <textarea
-                              v-model="editedRecord[field.fieldname]"
-                              rows="4"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            ></textarea>
-                          </div>
-
-                          <!-- Checkbox fields -->
-                          <div
-                            v-else-if="field.fieldtype === 'Check'"
-                            class="mt-1"
-                          >
-                            <label class="inline-flex items-center">
-                              <input
-                                type="checkbox"
-                                v-model="editedRecord[field.fieldname]"
-                                class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                              />
-                              <span class="ml-2 text-gray-700">{{
-                                field.label
-                              }}</span>
-                            </label>
-                          </div>
-
-                          <!-- Image fields -->
-                          <div
-                            v-else-if="field.fieldtype === 'Attach Image'"
-                            class="mt-1"
-                          >
-                            <div
-                              v-if="editedRecord[field.fieldname]"
-                              class="mb-2"
-                            >
-                              <img
-                                :src="editedRecord[field.fieldname]"
-                                alt="Attached Image"
-                                class="h-24 w-auto rounded-lg object-cover"
-                              />
-                            </div>
-                            <input
-                              type="file"
-                              @change="
-                                handleFileUpload($event, field.fieldname)
-                              "
-                              accept="image/*"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-
-                          <!-- Attachment fields -->
-                          <div
-                            v-else-if="field.fieldtype === 'Attach'"
-                            class="mt-1"
-                          >
-                            <div
-                              v-if="editedRecord[field.fieldname]"
-                              class="mb-2 flex items-center"
-                            >
-                              <a
-                                :href="editedRecord[field.fieldname]"
-                                target="_blank"
-                                class="text-blue-600 hover:underline mr-2"
-                              >
-                                Current File
-                              </a>
-                              <button
-                                @click="editedRecord[field.fieldname] = ''"
-                                class="text-red-600 hover:text-red-800"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                            <input
-                              type="file"
-                              @change="
-                                handleFileUpload($event, field.fieldname)
-                              "
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            />
-                          </div>
-
-                          <!-- Date fields -->
-                          <input
-                            v-else-if="field.fieldtype === 'Date'"
-                            type="date"
-                            v-model="editedRecord[field.fieldname]"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-
-                          <!-- Datetime fields -->
-                          <input
-                            v-else-if="field.fieldtype === 'Datetime'"
-                            type="datetime-local"
-                            v-model="editedRecord[field.fieldname]"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-
-                          <!-- Default field input -->
-                          <input
-                            v-else
-                            type="text"
-                            v-model="editedRecord[field.fieldname]"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </template>
-                      </div>
-                    </template>
+            <!-- Linked Records Section - Only shown if there are linked records -->
+            <div v-if="hasLinkedRecords" class="border-t border-gray-200 pt-6">
+              <h3 class="text-lg font-medium text-gray-900 mb-4">
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                  Linked Records
+                </div>
+              </h3>
+              <div class="space-y-4">
+                <div v-for="(group, doctype) in groupedLinkedRecords" :key="doctype" class="bg-gray-50 p-4 rounded-lg">
+                  <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                    <span class="inline-block w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
+                    {{ doctype }} ({{ group.length }})
+                  </h4>
+                  <div class="space-y-2">
+                    <div v-for="record in group" :key="record.name" class="bg-white p-3 rounded border border-gray-200 hover:shadow-md transition-shadow">
+                      <a 
+                        :href="`/${getRouteFromDoctype(doctype)}/${record.name}`"
+                        class="flex justify-between items-center text-blue-600 hover:text-blue-800"
+                        @click.prevent="navigateToLinkedRecord(doctype, record.name)"
+                      >
+                        <div class="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span>{{ record.title || record.name }}</span>
+                        </div>
+                        <div class="flex items-center">
+                          <span class="hidden md:inline mr-2 text-xs text-gray-500">{{ formatDate(record.modified || record.creation).split(',')[0] }}</span>
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </a>
+                    </div>
                   </div>
-                </template>
+                </div>
               </div>
             </div>
-          </template>
+
+            <!-- Metadata Section -->
+            <div class="border-t border-gray-200 pt-6">
+              <h3 class="text-lg font-medium text-gray-900 mb-4">
+                <div class="flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Metadata
+                </div>
+              </h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div class="text-sm font-medium text-gray-500 mb-1">Created By</div>
+                  <div class="text-blue-600">{{ record.owner || 'Unknown' }}</div>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-gray-500 mb-1">Created On</div>
+                  <div class="text-blue-600">{{ formatDate(record.creation) }}</div>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-gray-500 mb-1">Last Modified By</div>
+                  <div class="text-blue-600">{{ record.modified_by || 'Unknown' }}</div>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-gray-500 mb-1">Last Modified On</div>
+                  <div class="text-blue-600">{{ formatDate(record.modified) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Mobile view: Active tab section -->
         <div class="md:hidden p-4">
-          <div v-if="nonEmptySections[activeTab]">
+          <!-- Section content for active tab -->
+          <div v-if="activeTab < nonEmptySections.length">
             <div class="space-y-4">
-              <template
-                v-for="column in nonEmptySections[activeTab].columns"
-                :key="column"
-              >
+              <template v-for="column in nonEmptySections[activeTab].columns" :key="column">
                 <template v-for="field in column" :key="field.fieldname">
                   <div
-                    v-if="
-                      shouldDisplayField(field) &&
-                      !isMetadataField(field.fieldname)
-                    "
+                    v-if="shouldDisplayField(field) && !isMetadataField(field.fieldname)"
                     class="mb-4 border-b pb-4"
                   >
                     <div class="text-sm font-medium text-gray-500 mb-1">
                       {{ field.label }}
                     </div>
 
-                    <!-- View Mode -->
-                    <template v-if="!isEditing">
-                      <!-- Link fields -->
-                      <div
-                        v-if="field.fieldtype === 'Link'"
-                        class="text-gray-900"
-                      >
-                        {{ getFieldDisplayValue(field) }}
-                      </div>
+                    <!-- Link fields -->
+                    <div
+                      v-if="field.fieldtype === 'Link'"
+                      class="text-blue-600"
+                    >
+                      {{ getFieldDisplayValue(field) }}
+                    </div>
 
-                      <!-- Select fields -->
-                      <div
-                        v-else-if="field.fieldtype === 'Select'"
-                        class="text-gray-900"
-                      >
-                        {{ record[field.fieldname] }}
-                      </div>
+                    <!-- Select fields -->
+                    <div
+                      v-else-if="field.fieldtype === 'Select'"
+                      class="text-blue-600"
+                    >
+                      {{ record[field.fieldname] }}
+                    </div>
 
-                      <!-- Text Editor fields -->
-                      <div
-                        v-else-if="field.fieldtype === 'Text Editor'"
-                        class="prose max-w-none bg-gray-50 p-3 rounded-lg"
-                      >
-                        <div v-html="record[field.fieldname]"></div>
-                      </div>
+                    <!-- Text Editor fields -->
+                    <div
+                      v-else-if="field.fieldtype === 'Text Editor'"
+                      class="prose max-w-none bg-gray-50 p-3 rounded-lg"
+                    >
+                      <div v-html="record[field.fieldname]"></div>
+                    </div>
 
-                      <!-- Checkbox fields -->
-                      <div
-                        v-else-if="field.fieldtype === 'Check'"
-                        class="text-gray-900"
+                    <!-- Checkbox fields -->
+                    <div
+                      v-else-if="field.fieldtype === 'Check'"
+                      class="text-blue-600"
+                    >
+                      <span
+                        v-if="record[field.fieldname]"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
                       >
-                        <span
-                          v-if="record[field.fieldname]"
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                        <svg
+                          class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400"
+                          fill="currentColor"
+                          viewBox="0 0 8 8"
                         >
-                          <svg
-                            class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400"
-                            fill="currentColor"
-                            viewBox="0 0 8 8"
-                          >
-                            <circle cx="4" cy="4" r="3" />
-                          </svg>
-                          Yes
-                        </span>
-                        <span
-                          v-else
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                        >
-                          <svg
-                            class="-ml-0.5 mr-1.5 h-2 w-2 text-red-400"
-                            fill="currentColor"
-                            viewBox="0 0 8 8"
-                          >
-                            <circle cx="4" cy="4" r="3" />
-                          </svg>
-                          No
-                        </span>
-                      </div>
-
-                      <!-- Image fields -->
-                      <div
-                        v-else-if="
-                          field.fieldtype === 'Attach Image' &&
-                          record[field.fieldname]
-                        "
-                        class="mt-1"
-                      >
-                        <img
-                          :src="record[field.fieldname]"
-                          alt="Attached Image"
-                          class="h-48 w-auto rounded-lg object-cover"
-                        />
-                      </div>
-
-                      <!-- Attachment fields -->
-                      <div
-                        v-else-if="
-                          field.fieldtype === 'Attach' &&
-                          record[field.fieldname]
-                        "
-                        class="mt-1 flex items-center"
-                      >
-                        <a
-                          :href="record[field.fieldname]"
-                          target="_blank"
-                          class="text-blue-600 hover:underline flex items-center"
-                        >
-                          <svg
-                            class="h-5 w-5 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                            />
-                          </svg>
-                          Download Attachment
-                        </a>
-                      </div>
-
-                      <!-- Date fields -->
-                      <div
-                        v-else-if="
-                          field.fieldtype === 'Date' ||
-                          field.fieldtype === 'Datetime'
-                        "
-                        class="text-gray-900"
-                      >
-                        {{ formatDate(record[field.fieldname]) }}
-                      </div>
-
-                      <!-- Default field display -->
-                      <div v-else class="text-gray-900">
-                        {{ record[field.fieldname] }}
-                      </div>
-                    </template>
-
-                    <!-- Edit Mode -->
-                    <template v-else>
-                      <!-- Link fields with search -->
-                      <div v-if="field.fieldtype === 'Link'" class="relative">
-                        <div class="relative">
-                          <input
-                            v-model="linkSearchQueries[field.fieldname]"
-                            type="text"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                            @focus="openLinkDropdown(field.fieldname)"
-                            @blur="closeLinkDropdownDelayed(field.fieldname)"
-                            placeholder="Search..."
-                          />
-                          <div
-                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-5 w-5 text-gray-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-
-                        <!-- Dropdown for link options -->
-                        <div
-                          v-if="activeLinkDropdown === field.fieldname"
-                          class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
-                        >
-                          <div
-                            v-for="option in getFilteredLinkOptions(field)"
-                            :key="option.value"
-                            class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
-                            @mousedown="
-                              selectLinkOption(field.fieldname, option.value)
-                            "
-                          >
-                            <span
-                              class="block truncate"
-                              :class="{
-                                'font-semibold':
-                                  editedRecord[field.fieldname] ===
-                                  option.value,
-                              }"
-                            >
-                              {{ option.label }}
-                            </span>
-                            <span
-                              v-if="
-                                editedRecord[field.fieldname] === option.value
-                              "
-                              class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600"
-                            >
-                              <svg
-                                class="h-5 w-5"
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path
-                                  fill-rule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clip-rule="evenodd"
-                                />
-                              </svg>
-                            </span>
-                          </div>
-                          <div
-                            v-if="getFilteredLinkOptions(field).length === 0"
-                            class="py-2 px-3 text-gray-500 italic"
-                          >
-                            No results found
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Select fields -->
-                      <select
-                        v-else-if="field.fieldtype === 'Select'"
-                        v-model="editedRecord[field.fieldname]"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option
-                          v-for="option in getSelectOptions(field)"
-                          :key="option"
-                          :value="option"
-                        >
-                          {{ option }}
-                        </option>
-                      </select>
-
-                      <!-- Text Editor fields -->
-                      <div
-                        v-else-if="field.fieldtype === 'Text Editor'"
-                        class="mt-1"
-                      >
-                        <textarea
-                          v-model="editedRecord[field.fieldname]"
-                          rows="4"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        ></textarea>
-                      </div>
-
-                      <!-- Checkbox fields -->
-                      <div v-else-if="field.fieldtype === 'Check'" class="mt-1">
-                        <label class="inline-flex items-center">
-                          <input
-                            type="checkbox"
-                            v-model="editedRecord[field.fieldname]"
-                            class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                          />
-                          <span class="ml-2 text-gray-700">{{
-                            field.label
-                          }}</span>
-                        </label>
-                      </div>
-
-                      <!-- Image fields -->
-                      <div
-                        v-else-if="field.fieldtype === 'Attach Image'"
-                        class="mt-1"
-                      >
-                        <div v-if="editedRecord[field.fieldname]" class="mb-2">
-                          <img
-                            :src="editedRecord[field.fieldname]"
-                            alt="Attached Image"
-                            class="h-24 w-auto rounded-lg object-cover"
-                          />
-                        </div>
-                        <input
-                          type="file"
-                          @change="handleFileUpload($event, field.fieldname)"
-                          accept="image/*"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <!-- Attachment fields -->
-                      <div
-                        v-else-if="field.fieldtype === 'Attach'"
-                        class="mt-1"
-                      >
-                        <div
-                          v-if="editedRecord[field.fieldname]"
-                          class="mb-2 flex items-center"
-                        >
-                          <a
-                            :href="editedRecord[field.fieldname]"
-                            target="_blank"
-                            class="text-blue-600 hover:underline mr-2"
-                          >
-                            Current File
-                          </a>
-                          <button
-                            @click="editedRecord[field.fieldname] = ''"
-                            class="text-red-600 hover:text-red-800"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <input
-                          type="file"
-                          @change="handleFileUpload($event, field.fieldname)"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <!-- Date fields -->
-                      <input
-                        v-else-if="field.fieldtype === 'Date'"
-                        type="date"
-                        v-model="editedRecord[field.fieldname]"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-
-                      <!-- Datetime fields -->
-                      <input
-                        v-else-if="field.fieldtype === 'Datetime'"
-                        type="datetime-local"
-                        v-model="editedRecord[field.fieldname]"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-
-                      <!-- Default field input -->
-                      <input
+                          <circle cx="4" cy="4" r="3" />
+                        </svg>
+                        Yes
+                      </span>
+                      <span
                         v-else
-                        type="text"
-                        v-model="editedRecord[field.fieldname]"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                      >
+                        <svg
+                          class="-ml-0.5 mr-1.5 h-2 w-2 text-red-400"
+                          fill="currentColor"
+                          viewBox="0 0 8 8"
+                        >
+                          <circle cx="4" cy="4" r="3" />
+                        </svg>
+                        No
+                      </span>
+                    </div>
+
+                    <!-- Image fields -->
+                    <div
+                      v-else-if="
+                        field.fieldtype === 'Attach Image' &&
+                        record[field.fieldname]
+                      "
+                      class="mt-1"
+                    >
+                      <img
+                        :src="record[field.fieldname]"
+                        alt="Attached Image"
+                        class="h-48 w-auto rounded-lg object-cover cursor-pointer"
+                        @click="openImageModal(record[field.fieldname])"
                       />
-                    </template>
+                    </div>
+
+                    <!-- Attachment fields -->
+                    <div
+                      v-else-if="
+                        field.fieldtype === 'Attach' &&
+                        record[field.fieldname]
+                      "
+                      class="mt-1 flex items-center"
+                    >
+                      <a
+                        :href="record[field.fieldname]"
+                        target="_blank"
+                        class="text-blue-600 hover:underline flex items-center"
+                      >
+                        <svg
+                          class="h-5 w-5 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          />
+                        </svg>
+                        Download Attachment
+                      </a>
+                    </div>
+
+                    <!-- Date fields -->
+                    <div
+                      v-else-if="
+                        field.fieldtype === 'Date' ||
+                        field.fieldtype === 'Datetime'
+                      "
+                      class="text-blue-600"
+                    >
+                      {{ formatDate(record[field.fieldname]) }}
+                    </div>
+
+                    <!-- Table fields -->
+                    <div
+                      v-else-if="field.fieldtype === 'Table' && record[field.fieldname] && record[field.fieldname].length > 0"
+                      class="mt-2 overflow-x-auto"
+                    >
+                      <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
+                                class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              {{ childField.label }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                          <tr v-for="(row, rowIndex) in record[field.fieldname]" :key="rowIndex">
+                            <td v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
+                                class="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
+                              {{ row[childField.fieldname] }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div
+                      v-else-if="field.fieldtype === 'Table' && (!record[field.fieldname] || record[field.fieldname].length === 0)"
+                      class="text-gray-500 italic"
+                    >
+                      No items
+                    </div>
+
+                    <!-- Default field display -->
+                    <div v-else class="text-blue-600">
+                      {{ record[field.fieldname] }}
+                    </div>
                   </div>
                 </template>
               </template>
             </div>
           </div>
+
+          <!-- Linked Records tab for mobile view -->
+          <div
+            v-if="activeTab === nonEmptySections.length && hasLinkedRecords"
+            class="space-y-4"
+          >
+            <div v-for="(group, doctype) in groupedLinkedRecords" :key="doctype" class="mb-6">
+              <div class="text-sm font-medium text-gray-700 mb-2">{{ doctype }} ({{ group.length }})</div>
+              <div class="space-y-3">
+                <div v-for="record in group" :key="record.name" class="border rounded-lg p-3">
+                  <a 
+                    :href="`/${getRouteFromDoctype(doctype)}/${record.name}`" 
+                    class="text-blue-600 hover:underline font-medium"
+                    @click.prevent="navigateToLinkedRecord(doctype, record.name)"
+                  >
+                    {{ record.title || record.name }}
+                  </a>
+                  <div class="text-sm text-gray-500 mt-1">
+                    {{ formatDate(record.modified || record.creation) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Metadata tab for mobile view -->
           <div
-            v-if="activeTab === nonEmptySections.length"
-            class="space-y-4 p-4"
+            v-if="activeTab === nonEmptySections.length + (hasLinkedRecords ? 1 : 0)"
+            class="space-y-4"
           >
             <div class="mb-4 border-b pb-4">
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Created By
               </div>
-              <div class="text-gray-900">{{ record.owner || 'Unknown' }}</div>
+              <div class="text-blue-600">{{ record.owner || 'Unknown' }}</div>
             </div>
             <div class="mb-4 border-b pb-4">
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Created On
               </div>
-              <div class="text-gray-900">{{ formatDate(record.creation) }}</div>
+              <div class="text-blue-600">{{ formatDate(record.creation) }}</div>
             </div>
             <div class="mb-4 border-b pb-4">
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Last Modified By
               </div>
-              <div class="text-gray-900">
+              <div class="text-blue-600">
                 {{ record.modified_by || 'Unknown' }}
               </div>
             </div>
@@ -908,13 +594,13 @@
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Last Modified On
               </div>
-              <div class="text-gray-900">{{ formatDate(record.modified) }}</div>
+              <div class="text-blue-600">{{ formatDate(record.modified) }}</div>
             </div>
           </div>
         </div>
 
         <!-- Back Button -->
-        <div class="p-4 md:p-6 border-t border-gray-200">
+        <div class="p-4 border-t border-gray-200 max-w-3xl mx-auto">
           <button
             @click="$router.push(`/${doctypeRoute}`)"
             class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
@@ -936,6 +622,21 @@
             Back to List
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div 
+      v-if="showImageModal" 
+      class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+      @click="showImageModal = false"
+    >
+      <div class="max-w-4xl max-h-screen p-4">
+        <img 
+          :src="modalImage" 
+          alt="Full size image" 
+          class="max-w-full max-h-[90vh] object-contain"
+        />
       </div>
     </div>
 
@@ -1004,6 +705,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getDocTypePermissions, getCurrentUser } from '../utils/permissions'
+import EditForm from './EditForm.vue'
 
 const props = defineProps({
   doctype: {
@@ -1037,16 +739,18 @@ const showDeleteConfirm = ref(false)
 const clientScripts = ref([])
 const eventHandlers = ref({})
 const userPermissions = ref({})
-const activeTab = ref(0)
 const isEditing = ref(false)
 const isSaving = ref(false)
 const canEdit = ref(false)
 const canDelete = ref(false)
 const currentUser = ref(null)
+const linkedRecords = ref([])
+const childTableFields = ref({})
+const activeTab = ref(0) // For mobile section tabs
 
-// Link field search functionality
-const linkSearchQueries = ref({})
-const activeLinkDropdown = ref(null)
+// Image modal
+const showImageModal = ref(false)
+const modalImage = ref('')
 
 // Permission error modal
 const showPermissionError = ref(false)
@@ -1064,6 +768,30 @@ const recordTitle = computed(() => {
   }
   return `${props.doctype} ${props.recordId}`
 })
+
+// Check if there are any linked records
+const hasLinkedRecords = computed(() => {
+  return linkedRecords.value.length > 0
+})
+
+// Group linked records by doctype
+const groupedLinkedRecords = computed(() => {
+  const grouped = {}
+  
+  linkedRecords.value.forEach(record => {
+    if (!grouped[record.doctype]) {
+      grouped[record.doctype] = []
+    }
+    grouped[record.doctype].push(record)
+  })
+  
+  return grouped
+})
+
+// Get route from doctype
+const getRouteFromDoctype = (doctype) => {
+  return doctype.toLowerCase().replace(/\s+/g, '-')
+}
 
 // Organize fields into sections and columns
 const fieldSections = computed(() => {
@@ -1146,6 +874,17 @@ const isMetadataField = (fieldname) => {
     'docstatus',
   ]
   return metadataFields.includes(fieldname)
+}
+
+// Get child table fields
+const getChildTableFields = (field) => {
+  return childTableFields.value[field.options] || []
+}
+
+// Open image modal
+const openImageModal = (imageUrl) => {
+  modalImage.value = imageUrl
+  showImageModal.value = true
 }
 
 // API Methods directly integrated
@@ -1275,6 +1014,32 @@ async function fetchDoctypeFields(doctype) {
   }
 }
 
+// Fetch child table fields
+async function fetchChildTableFields(doctype) {
+  try {
+    const response = await fetch(
+      '/api/method/frappe.desk.form.load.getdoctype',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ doctype }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (data.message && data.message.docs && data.message.docs[0]) {
+      const doctypeDef = data.message.docs[0]
+      return doctypeDef.fields || []
+    }
+    
+    return []
+  } catch (error) {
+    console.error(`Error fetching child table fields for ${doctype}:`, error)
+    return []
+  }
+}
+
 async function fetchLinkOptions(doctype, fields = ['name'], filters = {}) {
   try {
     const response = await fetch('/api/method/frappe.client.get_list', {
@@ -1297,6 +1062,143 @@ async function fetchLinkOptions(doctype, fields = ['name'], filters = {}) {
   } catch (error) {
     console.error(`Error fetching options for ${doctype}:`, error)
     return []
+  }
+}
+
+// Fetch linked records for the current document
+async function fetchLinkedRecords(doctype, name) {
+  try {
+    console.log(`Fetching linked records for ${doctype} ${name}...`)
+    
+    // First, try to get linked doctypes
+    const response = await fetch('/api/method/frappe.desk.form.linked_with.get_linked_doctypes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctype }),
+    })
+    
+    const data = await response.json()
+    
+    if (!data.message) {
+      console.log('No linked doctypes found')
+      return []
+    }
+    
+    // Get all linked doctypes
+    const linkedDoctypes = Object.keys(data.message)
+    console.log('Linked doctypes:', linkedDoctypes)
+    
+    // For each linked doctype, fetch the linked documents
+    const allLinkedRecords = []
+    
+    for (const linkedDoctype of linkedDoctypes) {
+      try {
+        // Skip common system doctypes
+        if (['Version', 'Comment', 'Communication', 'File'].includes(linkedDoctype)) {
+          continue
+        }
+        
+        const linkedResponse = await fetch('/api/method/frappe.client.get_list', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            doctype: linkedDoctype,
+            fields: ['name', 'creation', 'modified'],
+            filters: {
+              // This is a simplification - in reality, the link field might have a different name
+              [doctype.toLowerCase()]: name
+            },
+            limit: 0 // Get all records
+          }),
+        })
+        
+        const linkedData = await linkedResponse.json()
+        
+        if (linkedData.message && linkedData.message.length > 0) {
+          console.log(`Found ${linkedData.message.length} linked ${linkedDoctype} records`)
+          
+          // Get title field for this doctype
+          const titleField = await getTitleFieldForDoctype(linkedDoctype)
+          
+          // If we have a title field, fetch it for each record
+          if (titleField && titleField !== 'name') {
+            for (const record of linkedData.message) {
+              try {
+                const detailResponse = await fetch('/api/method/frappe.client.get', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    doctype: linkedDoctype,
+                    name: record.name,
+                  }),
+                })
+                
+                const detailData = await detailResponse.json()
+                
+                if (detailData.message) {
+                  record.title = detailData.message[titleField]
+                }
+              } catch (error) {
+                console.error(`Error fetching details for ${linkedDoctype} ${record.name}:`, error)
+              }
+            }
+          }
+          
+          // Add to our list with doctype information
+          linkedData.message.forEach(record => {
+            allLinkedRecords.push({
+              ...record,
+              doctype: linkedDoctype
+            })
+          })
+        }
+      } catch (error) {
+        console.error(`Error fetching linked ${linkedDoctype} records:`, error)
+      }
+    }
+    
+    console.log('All linked records:', allLinkedRecords)
+    return allLinkedRecords
+    
+  } catch (error) {
+    console.error(`Error fetching linked records for ${doctype} ${name}:`, error)
+    return []
+  }
+}
+
+// Get the title field for a doctype
+async function getTitleFieldForDoctype(doctype) {
+  try {
+    const response = await fetch('/api/method/frappe.desk.form.load.getdoctype', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ doctype }),
+    })
+    
+    const data = await response.json()
+    
+    if (data.message && data.message.docs && data.message.docs[0]) {
+      // Check if there's a title field defined
+      if (data.message.docs[0].title_field) {
+        return data.message.docs[0].title_field
+      }
+      
+      // Otherwise, look for common title fields
+      const commonTitleFields = ['title', 'subject', 'name', 'description']
+      const fields = data.message.docs[0].fields || []
+      
+      for (const fieldName of commonTitleFields) {
+        if (fields.some(f => f.fieldname === fieldName)) {
+          return fieldName
+        }
+      }
+    }
+    
+    // Default to name
+    return 'name'
+  } catch (error) {
+    console.error(`Error getting title field for ${doctype}:`, error)
+    return 'name'
   }
 }
 
@@ -1449,6 +1351,9 @@ const fetchRecord = async () => {
       // Create a deep copy for editing
       editedRecord.value = JSON.parse(JSON.stringify(data))
 
+      // Fetch linked records
+      linkedRecords.value = await fetchLinkedRecords(props.doctype, props.recordId)
+
       triggerEvent('onload')
     } catch (err) {
       console.error(`Error fetching ${props.doctype}:`, err)
@@ -1477,6 +1382,15 @@ const fetchDoctypeFieldsAndProcess = async () => {
       formFields.value = result.fields
     } else {
       throw new Error('Invalid response format')
+    }
+
+    // Process table fields to fetch their child fields
+    const tableFields = formFields.value.filter(field => field.fieldtype === 'Table');
+    for (const field of tableFields) {
+      if (field.options) {
+        const childFields = await fetchChildTableFields(field.options);
+        childTableFields.value[field.options] = childFields;
+      }
     }
 
     await fetchLinkFieldOptions()
@@ -1691,62 +1605,6 @@ const fetchLinkFieldOptions = async () => {
   }
 }
 
-// Link field search functionality
-const openLinkDropdown = (fieldname) => {
-  activeLinkDropdown.value = fieldname
-
-  // Initialize search query with current value's label if it exists
-  if (editedRecord.value[fieldname]) {
-    const field = formFields.value.find((f) => f.fieldname === fieldname)
-    if (field && field.fieldtype === 'Link') {
-      const options = linkFieldOptions.value[fieldname] || []
-      const option = options.find(
-        (opt) => opt.value === editedRecord.value[fieldname]
-      )
-      if (option) {
-        linkSearchQueries.value[fieldname] = option.label
-      }
-    }
-  }
-}
-
-const closeLinkDropdownDelayed = (fieldname) => {
-  setTimeout(() => {
-    if (activeLinkDropdown.value === fieldname) {
-      activeLinkDropdown.value = null
-    }
-  }, 200)
-}
-
-const selectLinkOption = (fieldname, value) => {
-  editedRecord.value[fieldname] = value
-
-  // Update search query with selected option's label
-  const field = formFields.value.find((f) => f.fieldname === fieldname)
-  if (field && field.fieldtype === 'Link') {
-    const options = linkFieldOptions.value[fieldname] || []
-    const option = options.find((opt) => opt.value === value)
-    if (option) {
-      linkSearchQueries.value[fieldname] = option.label
-    }
-  }
-
-  activeLinkDropdown.value = null
-}
-
-const getFilteredLinkOptions = (field) => {
-  const options = linkFieldOptions.value[field.fieldname] || []
-  const searchQuery = linkSearchQueries.value[field.fieldname] || ''
-
-  if (!searchQuery) {
-    return options
-  }
-
-  return options.filter((option) =>
-    option.label.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-}
-
 const shouldDisplayField = (field) => {
   if (!record.value) return false
 
@@ -1757,6 +1615,7 @@ const shouldDisplayField = (field) => {
   const value = record.value[field.fieldname]
   return (
     field.fieldtype === 'Check' ||
+    field.fieldtype === 'Table' ||
     (value !== undefined && value !== null && value !== '')
   )
 }
@@ -1774,31 +1633,6 @@ const getFieldDisplayValue = (field) => {
   }
 
   return value
-}
-
-const getSelectOptions = (field) => {
-  if (field.options) {
-    return field.options.split('\n')
-  }
-  return []
-}
-
-const getStatusClass = (status) => {
-  switch (status.toLowerCase()) {
-    case 'open':
-      return 'bg-yellow-100 text-yellow-800'
-    case 'closed':
-      return 'bg-green-100 text-green-800'
-    case 'resolved':
-      return 'bg-blue-100 text-blue-800'
-    case 'on hold':
-    case 'hold':
-      return 'bg-orange-100 text-orange-800'
-    case 'replied':
-      return 'bg-purple-100 text-purple-800'
-    default:
-      return 'bg-gray-100 text-gray-800'
-  }
 }
 
 const formatDate = (dateString) => {
@@ -1835,14 +1669,14 @@ const cancelEditing = () => {
   editedRecord.value = JSON.parse(JSON.stringify(record.value))
 }
 
-const saveChanges = async () => {
+const saveChanges = async (updatedRecord) => {
   try {
     isSaving.value = true
     console.log('Starting save operation...')
 
     // Prepare data for update
     const updateData = {}
-    for (const [key, value] of Object.entries(editedRecord.value)) {
+    for (const [key, value] of Object.entries(updatedRecord)) {
       // Only include fields that have changed
       if (JSON.stringify(value) !== JSON.stringify(record.value[key])) {
         updateData[key] = value
@@ -1861,15 +1695,15 @@ const saveChanges = async () => {
     console.log('Sending update with data:', updateData)
 
     // Update the document
-    const updatedRecord = await updateDocument(
+    const updatedDocRecord = await updateDocument(
       props.doctype,
       props.recordId,
       updateData
     )
-    console.log('Update successful, received:', updatedRecord)
+    console.log('Update successful, received:', updatedDocRecord)
 
     // Update the local record
-    record.value = updatedRecord
+    record.value = updatedDocRecord
 
     // Exit edit mode
     isEditing.value = false
@@ -1878,7 +1712,7 @@ const saveChanges = async () => {
     triggerEvent('onupdate')
 
     // Emit record-updated event
-    emit('record-updated', updatedRecord)
+    emit('record-updated', updatedDocRecord)
   } catch (error) {
     console.error(`Error updating ${props.doctype}:`, error)
 
@@ -1897,13 +1731,14 @@ const saveChanges = async () => {
   }
 }
 
-const handleFileUpload = async (event, fieldname) => {
-  const file = event.target.files[0]
+const handleFileUpload = async ({ file, fieldname, callback }) => {
   if (!file) return
 
   try {
     const fileData = await uploadFile(file)
-    editedRecord.value[fieldname] = fileData.file_url
+    if (callback && typeof callback === 'function') {
+      callback(fileData.file_url)
+    }
   } catch (error) {
     console.error('Error uploading file:', error)
     permissionErrorMessage.value = `Error uploading file: ${error.message}`
@@ -1994,6 +1829,12 @@ const handleDelete = async () => {
   }
 }
 
+// Navigate to a linked record
+const navigateToLinkedRecord = (doctype, name) => {
+  const route = `/${getRouteFromDoctype(doctype)}/${name}`
+  router.push(route)
+}
+
 onMounted(async () => {
   console.log(
     `DetailView component mounted for ${props.doctype} ${props.recordId}`
@@ -2030,6 +1871,7 @@ watch(
     record.value = {}
     editedRecord.value = {}
     isEditing.value = false
+    childTableFields.value = {}
 
     try {
       await fetchDoctypeFieldsAndProcess()
@@ -2060,3 +1902,4 @@ watch(
   }
 }
 </style>
+

@@ -20,9 +20,16 @@ import BottomNav from './components/BottomNav.vue';
 const route = useRoute();
 
 const hideNavBars = computed(() => {
-  return route.path === '/profile' || route.path === '/issue/new' || route.path === '/account/login' 
+  // Hide navbar on login, new item pages, and detail/edit pages
+  return route.path === '/profile' || 
+         route.path === '/issue/new' || 
+         route.path === '/account/login' ||
+         route.path.includes('/task/') ||
+         route.path.includes('/issue/') ||
+         (route.name && 
+          (route.name.includes('Detail') || 
+           route.name.includes('Edit')))
 });
-
 
 onMounted(() => {
   // Register service worker for PWA

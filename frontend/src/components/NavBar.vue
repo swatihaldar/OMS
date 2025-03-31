@@ -5,7 +5,7 @@
     <div class="flex items-center space-x-4">
       <BellIcon class="h-6 w-6 text-gray-600" />
 
-      <button @click="goToProfile" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button @click="goToProfile" class="h-9 w-9 rounded-full bg-gray-200 overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center justify-center">
         <img v-if="userData && userData.user_image" :src="getUserImage(userData.user_image)" :alt="userData.full_name" class="h-full w-full object-cover" />
         <div v-else class="h-full w-full flex items-center justify-center bg-blue-100 text-blue-600 font-medium text-lg">
           {{ getInitials(userData?.full_name) }}
@@ -58,3 +58,19 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+/* Ensure circular profile image */
+button {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button img, button div {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+</style>
