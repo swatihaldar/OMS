@@ -713,38 +713,60 @@ const getColumnClass = (index) => {
   return 'col-span-1';
 };
 
-const sortedOptionsCache = ref({});
+// const sortedOptionsCache = ref({});
+
+// const getOptionsForField = (field) => {
+//   const cacheKey = field.fieldname;
+  
+//   // Return cached sorted options if available
+//   if (sortedOptionsCache.value[cacheKey]) {
+//     return sortedOptionsCache.value[cacheKey];
+//   }
+
+//   let options = [];
+  
+//   if (props.fieldOptions[field.fieldname]) {
+//     options = props.fieldOptions[field.fieldname];
+//   } else if (field.fieldtype === 'Link' && linkFieldOptions.value[field.fieldname]) {
+//     options = linkFieldOptions.value[field.fieldname];
+//   } else if (field.fieldtype === 'Select' && field.options) {
+//     options = field.options.split('\n').map(option => ({
+//       value: option,
+//       label: option
+//     }));
+//   }
+
+//   // Sort and cache the results
+//   const sortedOptions = [...options].sort((a, b) => {
+//     const labelA = a.label?.toLowerCase() || '';
+//     const labelB = b.label?.toLowerCase() || '';
+//     return labelA.localeCompare(labelB);
+//   });
+
+//   sortedOptionsCache.value[cacheKey] = sortedOptions;
+//   return sortedOptions;
+// };
+
 
 const getOptionsForField = (field) => {
-  const cacheKey = field.fieldname;
-  
-  // Return cached sorted options if available
-  if (sortedOptionsCache.value[cacheKey]) {
-    return sortedOptionsCache.value[cacheKey];
-  }
-
-  let options = [];
-  
   if (props.fieldOptions[field.fieldname]) {
-    options = props.fieldOptions[field.fieldname];
-  } else if (field.fieldtype === 'Link' && linkFieldOptions.value[field.fieldname]) {
-    options = linkFieldOptions.value[field.fieldname];
-  } else if (field.fieldtype === 'Select' && field.options) {
-    options = field.options.split('\n').map(option => ({
-      value: option,
-      label: option
-    }));
+    return props.fieldOptions[field.fieldname];
+  }
+  
+  if (field.fieldtype === 'Link' && linkFieldOptions.value[field.fieldname]) {
+    return linkFieldOptions.value[field.fieldname];
+  }
+  
+  if (field.fieldtype === 'Select') {
+    if (field.options) {
+      return field.options.split('\n').map(option => ({
+        value: option,
+        label: option
+      }));
+    }
   }
 
-  // Sort and cache the results
-  const sortedOptions = [...options].sort((a, b) => {
-    const labelA = a.label?.toLowerCase() || '';
-    const labelB = b.label?.toLowerCase() || '';
-    return labelA.localeCompare(labelB);
-  });
-
-  sortedOptionsCache.value[cacheKey] = sortedOptions;
-  return sortedOptions;
+  return [];
 };
 
 // Filtered options for link fields with search
