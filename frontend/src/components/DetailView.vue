@@ -254,6 +254,26 @@
                             {{ formatDate(record[field.fieldname]) }}
                           </div>
 
+                          <!-- Color fields -->
+                          <div
+                            v-else-if="field.fieldtype === 'Color' && record[field.fieldname]"
+                            class="flex items-center"
+                          >
+                            <div 
+                              class="h-5 w-5 rounded mr-2" 
+                              :style="{ backgroundColor: record[field.fieldname] }"
+                            ></div>
+                            <span class="text-blue-600">{{ record[field.fieldname] }}</span>
+                          </div>
+
+                          <!-- Small Text fields -->
+                          <div
+                            v-else-if="field.fieldtype === 'Small Text'"
+                            class="text-blue-600 whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm"
+                          >
+                            {{ record[field.fieldname] }}
+                          </div>
+
                           <!-- Table fields -->
                           <div
                             v-else-if="field.fieldtype === 'Table' && record[field.fieldname] && record[field.fieldname].length > 0"
@@ -262,17 +282,71 @@
                             <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
                               <thead class="bg-gray-50">
                                 <tr>
-                                  <th v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
-                                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  <th 
+                                    v-for="childField in getVisibleChildTableFields(field)" 
+                                    :key="childField.fieldname" 
+                                    class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                                    :style="getColumnStyle(childField)"
+                                  >
                                     {{ childField.label }}
                                   </th>
                                 </tr>
                               </thead>
                               <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="(row, rowIndex) in record[field.fieldname]" :key="rowIndex">
-                                  <td v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
-                                      class="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
-                                    {{ row[childField.fieldname] }}
+                                  <td 
+                                    v-for="childField in getVisibleChildTableFields(field)" 
+                                    :key="childField.fieldname" 
+                                    class="px-3 py-2 text-sm text-blue-600"
+                                    :style="getColumnStyle(childField)"
+                                  >
+                                    <!-- Different display formats based on field type -->
+                                    <template v-if="childField.fieldtype === 'Check'">
+                                      <span
+                                        v-if="row[childField.fieldname]"
+                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                      >
+                                        <svg
+                                          class="-ml-0.5 mr-1 h-2 w-2 text-green-400"
+                                          fill="currentColor"
+                                          viewBox="0 0 8 8"
+                                        >
+                                          <circle cx="4" cy="4" r="3" />
+                                        </svg>
+                                        Yes
+                                      </span>
+                                      <span
+                                        v-else
+                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                                      >
+                                        <svg
+                                          class="-ml-0.5 mr-1 h-2 w-2 text-red-400"
+                                          fill="currentColor"
+                                          viewBox="0 0 8 8"
+                                        >
+                                          <circle cx="4" cy="4" r="3" />
+                                        </svg>
+                                        No
+                                      </span>
+                                    </template>
+                                    
+                                    <template v-else-if="childField.fieldtype === 'Color'">
+                                      <div class="flex items-center">
+                                        <div 
+                                          class="h-4 w-4 rounded mr-1" 
+                                          :style="{ backgroundColor: row[childField.fieldname] || '#FFFFFF' }"
+                                        ></div>
+                                        <span>{{ row[childField.fieldname] }}</span>
+                                      </div>
+                                    </template>
+                                    
+                                    <template v-else-if="childField.fieldtype === 'Date' || childField.fieldtype === 'Datetime'">
+                                      {{ formatDate(row[childField.fieldname]) }}
+                                    </template>
+                                    
+                                    <template v-else>
+                                      {{ row[childField.fieldname] }}
+                                    </template>
                                   </td>
                                 </tr>
                               </tbody>
@@ -500,6 +574,26 @@
                       {{ formatDate(record[field.fieldname]) }}
                     </div>
 
+                    <!-- Color fields -->
+                    <div
+                      v-else-if="field.fieldtype === 'Color' && record[field.fieldname]"
+                      class="flex items-center"
+                    >
+                      <div 
+                        class="h-5 w-5 rounded mr-2" 
+                        :style="{ backgroundColor: record[field.fieldname] }"
+                      ></div>
+                      <span class="text-blue-600">{{ record[field.fieldname] }}</span>
+                    </div>
+
+                    <!-- Small Text fields -->
+                    <div
+                      v-else-if="field.fieldtype === 'Small Text'"
+                      class="text-blue-600 whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm"
+                    >
+                      {{ record[field.fieldname] }}
+                    </div>
+
                     <!-- Table fields -->
                     <div
                       v-else-if="field.fieldtype === 'Table' && record[field.fieldname] && record[field.fieldname].length > 0"
@@ -508,17 +602,71 @@
                       <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
                         <thead class="bg-gray-50">
                           <tr>
-                            <th v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
-                                class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th 
+                              v-for="childField in getVisibleChildTableFields(field)" 
+                              :key="childField.fieldname" 
+                              class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
+                              :style="getColumnStyle(childField)"
+                            >
                               {{ childField.label }}
                             </th>
                           </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                           <tr v-for="(row, rowIndex) in record[field.fieldname]" :key="rowIndex">
-                            <td v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
-                                class="px-3 py-2 whitespace-nowrap text-sm text-blue-600">
-                              {{ row[childField.fieldname] }}
+                            <td 
+                              v-for="childField in getVisibleChildTableFields(field)" 
+                              :key="childField.fieldname" 
+                              class="px-3 py-2 text-sm text-blue-600"
+                              :style="getColumnStyle(childField)"
+                            >
+                              <!-- Different display formats based on field type -->
+                              <template v-if="childField.fieldtype === 'Check'">
+                                <span
+                                  v-if="row[childField.fieldname]"
+                                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                >
+                                  <svg
+                                    class="-ml-0.5 mr-1 h-2 w-2 text-green-400"
+                                    fill="currentColor"
+                                    viewBox="0 0 8 8"
+                                  >
+                                    <circle cx="4" cy="4" r="3" />
+                                  </svg>
+                                  Yes
+                                </span>
+                                <span
+                                  v-else
+                                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
+                                >
+                                  <svg
+                                    class="-ml-0.5 mr-1 h-2 w-2 text-red-400"
+                                    fill="currentColor"
+                                    viewBox="0 0 8 8"
+                                  >
+                                    <circle cx="4" cy="4" r="3" />
+                                  </svg>
+                                  No
+                                </span>
+                              </template>
+                              
+                              <template v-else-if="childField.fieldtype === 'Color'">
+                                <div class="flex items-center">
+                                  <div 
+                                    class="h-4 w-4 rounded mr-1" 
+                                    :style="{ backgroundColor: row[childField.fieldname] || '#FFFFFF' }"
+                                  ></div>
+                                  <span>{{ row[childField.fieldname] }}</span>
+                                </div>
+                              </template>
+                              
+                              <template v-else-if="childField.fieldtype === 'Date' || childField.fieldtype === 'Datetime'">
+                                {{ formatDate(row[childField.fieldname]) }}
+                              </template>
+                              
+                              <template v-else>
+                                {{ row[childField.fieldname] }}
+                              </template>
                             </td>
                           </tr>
                         </tbody>
@@ -705,6 +853,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getDocTypePermissions, getCurrentUser } from '../utils/permissions'
+import { shouldHideViewField } from '../config/field-config'
 import EditForm from './EditForm.vue'
 
 const props = defineProps({
@@ -799,6 +948,26 @@ const getRouteFromDoctype = (doctype) => {
   return doctype.toLowerCase().replace(/\s+/g, '-')
 }
 
+// Get column style based on field type
+const getColumnStyle = (field) => {
+  const style = {};
+  
+  // Set width based on field type
+  if (field.fieldtype === 'Check') {
+    style.width = '60px';
+  } else if (field.fieldtype === 'Int' || field.fieldtype === 'Float') {
+    style.width = '100px';
+  } else if (field.fieldtype === 'Date') {
+    style.width = '120px';
+  } else if (field.fieldtype === 'Color') {
+    style.width = '120px';
+  } else if (field.fieldtype === 'Small Text') {
+    style.minWidth = '200px';
+  }
+  
+  return style;
+};
+
 // Organize fields into sections and columns
 const fieldSections = computed(() => {
   const sections = []
@@ -886,6 +1055,15 @@ const isMetadataField = (fieldname) => {
 const getChildTableFields = (field) => {
   return childTableFields.value[field.options] || []
 }
+
+// Get visible child table fields (filtering out hidden fields)
+const getVisibleChildTableFields = (field) => {
+  const allFields = getChildTableFields(field);
+  return allFields.filter(childField => 
+    !childField.hidden && 
+    !shouldHideViewField(field.options, childField.fieldname)
+  );
+};
 
 // Open image modal
 const openImageModal = (imageUrl) => {
@@ -1616,6 +1794,9 @@ const shouldDisplayField = (field) => {
 
   // In edit mode, show all fields
   if (isEditing.value) return true
+
+  // Check if field is configured to be hidden in view mode
+  if (shouldHideViewField(props.doctype, field.fieldname)) return false
 
   // In view mode, only show fields with values
   const value = record.value[field.fieldname]

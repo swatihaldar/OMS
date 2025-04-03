@@ -19,7 +19,10 @@
                 <template v-for="(column, columnIndex) in section.columns" :key="columnIndex">
                   <div class="space-y-4">
                     <template v-for="field in column" :key="field.fieldname">
-                      <div v-if="!isMetadataField(field.fieldname)" class="mb-4">
+                      <div 
+                        v-if="shouldDisplayField(field)" 
+                        class="mb-4"
+                      >
                         <div class="text-sm font-medium text-gray-500 mb-1">
                           {{ field.label }}
                           <span v-if="field.reqd" class="text-red-500">*</span>
@@ -35,6 +38,7 @@
                               @focus="openLinkDropdown(field.fieldname)"
                               @blur="closeLinkDropdownDelayed(field.fieldname)"
                               placeholder="Search..."
+                              :disabled="isFieldReadonly(field)"
                             />
                             <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                               <svg
@@ -56,7 +60,7 @@
   
                           <!-- Dropdown for link options -->
                           <div
-                            v-if="activeLinkDropdown === field.fieldname"
+                            v-if="activeLinkDropdown === field.fieldname && !isFieldReadonly(field)"
                             class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
                           >
                             <div
@@ -105,6 +109,7 @@
                           v-else-if="field.fieldtype === 'Select'"
                           v-model="editedRecord[field.fieldname]"
                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          :disabled="isFieldReadonly(field)"
                         >
                           <option value="">Select an option</option>
                           <option
@@ -122,6 +127,17 @@
                             v-model="editedRecord[field.fieldname]"
                             rows="4"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            :disabled="isFieldReadonly(field)"
+                          ></textarea>
+                        </div>
+  
+                        <!-- Small Text fields -->
+                        <div v-else-if="field.fieldtype === 'Small Text'" class="mt-1">
+                          <textarea
+                            v-model="editedRecord[field.fieldname]"
+                            rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            :disabled="isFieldReadonly(field)"
                           ></textarea>
                         </div>
   
@@ -132,9 +148,27 @@
                               type="checkbox"
                               v-model="editedRecord[field.fieldname]"
                               class="form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                              :disabled="isFieldReadonly(field)"
                             />
                             <span class="ml-2 text-gray-700">{{ field.label }}</span>
                           </label>
+                        </div>
+  
+                        <!-- Color fields -->
+                        <div v-else-if="field.fieldtype === 'Color'" class="mt-1 flex items-center">
+                          <input
+                            type="color"
+                            v-model="editedRecord[field.fieldname]"
+                            class="h-8 w-12 rounded border border-gray-300 mr-2"
+                            :disabled="isFieldReadonly(field)"
+                          />
+                          <input
+                            type="text"
+                            v-model="editedRecord[field.fieldname]"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="#RRGGBB"
+                            :disabled="isFieldReadonly(field)"
+                          />
                         </div>
   
                         <!-- Image fields -->
@@ -147,6 +181,7 @@
                             />
                           </div>
                           <input
+                            v-if="!isFieldReadonly(field)"
                             type="file"
                             @change="handleFileUpload($event, field.fieldname)"
                             accept="image/*"
@@ -165,6 +200,7 @@
                               Current File
                             </a>
                             <button
+                              v-if="!isFieldReadonly(field)"
                               @click="editedRecord[field.fieldname] = ''"
                               class="text-red-600 hover:text-red-800"
                             >
@@ -172,6 +208,7 @@
                             </button>
                           </div>
                           <input
+                            v-if="!isFieldReadonly(field)"
                             type="file"
                             @change="handleFileUpload($event, field.fieldname)"
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -184,6 +221,7 @@
                           type="date"
                           v-model="editedRecord[field.fieldname]"
                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          :disabled="isFieldReadonly(field)"
                         />
   
                         <!-- Datetime fields -->
@@ -192,19 +230,23 @@
                           type="datetime-local"
                           v-model="editedRecord[field.fieldname]"
                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          :disabled="isFieldReadonly(field)"
                         />
   
                         <!-- Table fields -->
                         <div v-else-if="field.fieldtype === 'Table'" class="mt-1">
-                          <div class="border rounded-md overflow-hidden">
+                          <div class="border rounded-md overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                               <thead class="bg-gray-50">
                                 <tr>
-                                  <th v-for="childField in getChildTableFields(field)" :key="childField.fieldname" 
-                                      class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  <th 
+                                    v-for="childField in getVisibleChildTableFields(field)" 
+                                    :key="childField.fieldname" 
+                                    class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                  >
                                     {{ childField.label }}
                                   </th>
-                                  <th class="px-3 py-2 text-right">
+                                  <th v-if="!isFieldReadonly(field)" class="px-3 py-2 text-right w-10">
                                     <button @click="addChildRow(field)" class="text-blue-600 hover:text-blue-800">
                                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -215,13 +257,87 @@
                               </thead>
                               <tbody class="bg-white divide-y divide-gray-200">
                                 <tr v-for="(row, rowIndex) in getChildTableData(field)" :key="rowIndex">
-                                  <td v-for="childField in getChildTableFields(field)" :key="childField.fieldname" class="px-3 py-2">
-                                    <input 
-                                      v-model="row[childField.fieldname]" 
-                                      class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                    />
+                                  <td 
+                                    v-for="childField in getVisibleChildTableFields(field)" 
+                                    :key="childField.fieldname" 
+                                    class="px-3 py-2"
+                                  >
+                                    <!-- Different input types for child table fields -->
+                                    <template v-if="!isFieldReadonly(field)">
+                                      <!-- Select field -->
+                                      <select 
+                                        v-if="childField.fieldtype === 'Select'"
+                                        v-model="row[childField.fieldname]" 
+                                        class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                      >
+                                        <option value="">Select</option>
+                                        <option 
+                                          v-for="option in getSelectOptions(childField)" 
+                                          :key="option" 
+                                          :value="option"
+                                        >
+                                          {{ option }}
+                                        </option>
+                                      </select>
+                                      
+                                      <!-- Check field -->
+                                      <input 
+                                        v-else-if="childField.fieldtype === 'Check'"
+                                        type="checkbox"
+                                        v-model="row[childField.fieldname]" 
+                                        class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                      />
+                                      
+                                      <!-- Color field -->
+                                      <div v-else-if="childField.fieldtype === 'Color'" class="flex items-center">
+                                        <input
+                                          type="color"
+                                          v-model="row[childField.fieldname]"
+                                          class="h-6 w-8 rounded border border-gray-300 mr-1"
+                                        />
+                                        <input
+                                          type="text"
+                                          v-model="row[childField.fieldname]"
+                                          class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                          placeholder="#RRGGBB"
+                                        />
+                                      </div>
+                                      
+                                      <!-- Default text input -->
+                                      <input 
+                                        v-else
+                                        type="text"
+                                        v-model="row[childField.fieldname]" 
+                                        class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                      />
+                                    </template>
+                                    
+                                    <!-- Read-only display -->
+                                    <template v-else>
+                                      <!-- Check field display -->
+                                      <span v-if="childField.fieldtype === 'Check'">
+                                        <svg v-if="row[childField.fieldname]" class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        <svg v-else class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </span>
+                                      
+                                      <!-- Color field display -->
+                                      <div v-else-if="childField.fieldtype === 'Color'" class="flex items-center">
+                                        <div 
+                                          class="h-4 w-4 rounded mr-1" 
+                                          :style="{ backgroundColor: row[childField.fieldname] || '#FFFFFF' }"
+                                        ></div>
+                                        <span>{{ row[childField.fieldname] }}</span>
+                                      </div>
+                                      
+                                      <!-- Default text display -->
+                                      <span v-else>{{ row[childField.fieldname] }}</span>
+                                    </template>
                                   </td>
-                                  <td class="px-3 py-2 text-right">
+                                  <td v-if="!isFieldReadonly(field)" class="px-3 py-2 text-right">
                                     <button @click="removeChildRow(field, rowIndex)" class="text-red-600 hover:text-red-800">
                                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-5 0h10" />
@@ -230,8 +346,8 @@
                                   </td>
                                 </tr>
                                 <tr v-if="!getChildTableData(field).length">
-                                  <td :colspan="getChildTableFields(field).length + 1" class="px-3 py-2 text-center text-gray-500">
-                                    No items. Click + to add a row.
+                                  <td :colspan="getVisibleChildTableFields(field).length + (isFieldReadonly(field) ? 0 : 1)" class="px-3 py-2 text-center text-gray-500">
+                                    {{ isFieldReadonly(field) ? 'No items' : 'No items. Click + to add a row.' }}
                                   </td>
                                 </tr>
                               </tbody>
@@ -245,6 +361,7 @@
                           type="text"
                           v-model="editedRecord[field.fieldname]"
                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          :disabled="isFieldReadonly(field)"
                         />
                       </div>
                     </template>
@@ -256,33 +373,34 @@
         </div>
       </div>
 
-     <!-- Fixed Action Buttons -->
-<div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
-  <div class="max-w-4xl mx-auto">
-    <div class="flex justify-between gap-3">
-      <button
-        @click="cancel"
-        class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-      >
-        Cancel
-      </button>
-      <button
-        @click="save"
-        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-        :disabled="isSaving"
-      >
-        <div v-if="isSaving" class="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-        Save
-      </button>
-    </div>
-  </div>
-</div>
+      <!-- Fixed Action Buttons -->
+      <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
+        <div class="max-w-4xl mx-auto">
+          <div class="flex justify-between gap-3">
+            <button
+              @click="cancel"
+              class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              @click="save"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+              :disabled="isSaving"
+            >
+              <div v-if="isSaving" class="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
+import { getFieldConfig, shouldHideField, isReadonlyField } from '../config/field-config';
   
 const props = defineProps({
   doctype: {
@@ -365,6 +483,15 @@ const initializeLinkSearchQueries = () => {
 const getChildTableFields = (field) => {
   return props.childTableFields[field.options] || [];
 };
+
+// Get visible child table fields (filtering out hidden fields)
+const getVisibleChildTableFields = (field) => {
+  const allFields = getChildTableFields(field);
+  return allFields.filter(childField => 
+    !childField.hidden && 
+    !shouldHideField(field.options, childField.fieldname)
+  );
+};
   
 // Get child table data
 const getChildTableData = (field) => {
@@ -416,7 +543,8 @@ const fieldSections = computed(() => {
         field &&
         field.fieldname &&
         !field.hidden &&
-        !systemFields.includes(field.fieldname)
+        !systemFields.includes(field.fieldname) &&
+        !shouldHideField(props.doctype, field.fieldname)
     )
     .sort((a, b) => (a.idx || 0) - (b.idx || 0));
 
@@ -462,6 +590,26 @@ const isMetadataField = (fieldname) => {
     'docstatus',
   ];
   return metadataFields.includes(fieldname);
+};
+
+// Check if a field should be displayed
+const shouldDisplayField = (field) => {
+  // Don't display metadata fields
+  if (isMetadataField(field.fieldname)) return false;
+  
+  // Don't display hidden fields
+  if (field.hidden) return false;
+  
+  // Don't display fields configured to be hidden for this doctype
+  if (shouldHideField(props.doctype, field.fieldname)) return false;
+  
+  return true;
+};
+
+// Check if a field should be readonly
+const isFieldReadonly = (field) => {
+  // Check if field is configured as readonly for this doctype
+  return field.read_only || isReadonlyField(props.doctype, field.fieldname);
 };
   
 // Link field search functionality
@@ -669,9 +817,43 @@ async function fetchLinkOptions(doctype, fields = ['name'], filters = {}) {
     return []
   }
 }
-
 </script>
 
 <style>
 /* Add any additional styles here */
+.color-field-preview {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Improve table field display */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th, td {
+  border: 1px solid #e2e8f0;
+}
+
+th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+/* Make table responsive */
+.overflow-x-auto {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.form-checkbox,.form-radio{
+  height: 0rem;
+}
 </style>
+

@@ -25,7 +25,18 @@ const route = useRoute();
 const userData = ref(null);
 
 // Dynamic title logic
-const pageTitle = computed(() => (route.path.startsWith('/issue') ? 'Issue' : 'OMS'));
+// const pageTitle = computed(() => (route.path.startsWith('/issue') ? 'Issue' : 'OMS'));
+
+const pageTitle = computed(() => {
+  if (route.path.startsWith('/issue')) {
+    return 'Issue';
+  } else if (route.path.startsWith('/task')) {
+    return 'Task';
+  } else {
+    return 'OMS';
+  }
+});
+
 
 // Navigate to Profile Page
 const goToProfile = () => {
@@ -73,4 +84,8 @@ button img, button div {
   height: 100%;
   border-radius: 50%;
 }
+
+/* *{
+  border: 1px solid red;
+} */
 </style>

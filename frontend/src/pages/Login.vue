@@ -2,11 +2,7 @@
   <div class="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <div class="flex justify-center">
-        <img
-          class="h-16 w-auto"
-          src="/icon.png"
-          alt="Your Logo"
-        />
+        <img class="h-16 w-auto" src="/icon.png" alt="Your Logo" />
       </div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
         Welcome Back
@@ -18,7 +14,7 @@
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md md:max-w-lg p-4 sm:p-0">
       <div class="bg-white py-8 px-4 shadow-lg sm:rounded-xl sm:px-10 border border-gray-100">
-        <!-- Error message -->
+        <!-- Login Error Message -->
         <div v-if="errorMessage" class="mb-4 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
           <div class="flex">
             <div class="flex-shrink-0">
@@ -30,6 +26,7 @@
           </div>
         </div>
 
+        <!-- Login Form -->
         <form class="space-y-6" @submit.prevent="handleSubmit">
           <div>
             <label for="email" class="block text-sm font-medium text-gray-700">
@@ -148,14 +145,16 @@
                 Reset your password
               </h3>
               <div class="mt-2">
-                <p class="text-sm text-gray-500">
+                <p v-if="!forgotPasswordSuccess" class="text-sm text-gray-500">
                   Enter your email address and we'll send you a link to reset your password.
                 </p>
               </div>
             </div>
           </div>
-          <div class="mt-5 sm:mt-6">
-            <div class="mt-1">
+          
+          <!-- Reset Password Form -->
+          <div v-if="!forgotPasswordSuccess">
+            <div class="mt-5">
               <input
                 v-model="forgotPasswordEmail"
                 type="email"
@@ -167,36 +166,50 @@
             <div v-if="forgotPasswordError" class="mt-2 text-sm text-red-600">
               {{ forgotPasswordError }}
             </div>
-            <div v-if="forgotPasswordSuccess" class="mt-2 text-sm text-green-600">
+            <div v-if="mailNotSetup" class="mt-2 text-sm text-yellow-600">
+              Mail server is not configured. Please contact your administrator.
+            </div>
+          </div>
+          
+          <!-- Success Message -->
+          <div v-else class="mt-5 text-center">
+            <CheckCircleIcon class="mx-auto h-12 w-12 text-green-500" />
+            <p class="mt-3 text-sm text-gray-700">
               {{ forgotPasswordSuccess }}
-            </div>
-            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-              <button
-                type="button"
-                @click="sendResetLink"
-                :disabled="forgotPasswordLoading"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm disabled:opacity-50"
+            </p>
+            <p class="mt-1 text-sm text-gray-500">
+              Please check your email to reset your password.
+            </p>
+          </div>
+
+          <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-1 sm:gap-3">
+            <button
+              v-if="!forgotPasswordSuccess"
+              type="button"
+              @click="sendResetLink"
+              :disabled="forgotPasswordLoading"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm disabled:opacity-50"
+            >
+              <svg
+                v-if="forgotPasswordLoading"
+                class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  v-if="forgotPasswordLoading"
-                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ forgotPasswordLoading ? 'Sending...' : 'Send reset link' }}
-              </button>
-              <button
-                type="button"
-                @click="showForgotPassword = false"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm"
-              >
-                Cancel
-              </button>
-            </div>
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ forgotPasswordLoading ? 'Sending...' : 'Send reset link' }}
+            </button>
+            <button
+              v-else
+              type="button"
+              @click="closeForgotPassword"
+              class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:text-sm"
+            >
+              OK
+            </button>
           </div>
         </div>
       </div>
@@ -212,7 +225,8 @@ import {
   LockClosedIcon, 
   EyeIcon, 
   EyeSlashIcon, 
-  ExclamationCircleIcon 
+  ExclamationCircleIcon,
+  CheckCircleIcon
 } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
@@ -228,6 +242,7 @@ const forgotPasswordEmail = ref('');
 const forgotPasswordLoading = ref(false);
 const forgotPasswordError = ref('');
 const forgotPasswordSuccess = ref('');
+const mailNotSetup = ref(false);
 
 const handleSubmit = async () => {
   loading.value = true;
@@ -252,7 +267,6 @@ const handleSubmit = async () => {
     const data = await response.json();
     
     if (response.ok && data.message === 'Logged In') {
-      // Redirect to home page
       router.push('/');
     } else {
       throw new Error(data.message || 'Invalid username or password');
@@ -265,10 +279,19 @@ const handleSubmit = async () => {
   }
 };
 
+const closeForgotPassword = () => {
+  showForgotPassword.value = false;
+  forgotPasswordEmail.value = '';
+  forgotPasswordError.value = '';
+  forgotPasswordSuccess.value = '';
+  mailNotSetup.value = false;
+};
+
 const sendResetLink = async () => {
   forgotPasswordLoading.value = true;
   forgotPasswordError.value = '';
   forgotPasswordSuccess.value = '';
+  mailNotSetup.value = false;
 
   try {
     if (!forgotPasswordEmail.value) {
@@ -287,15 +310,31 @@ const sendResetLink = async () => {
 
     const data = await response.json();
 
-    if (response.ok && data.message === 'Password reset instructions have been sent to your email') {
-      forgotPasswordSuccess.value = data.message;
-      // Close the modal after 3 seconds
-      setTimeout(() => {
-        showForgotPassword.value = false;
-        forgotPasswordEmail.value = '';
-      }, 3000);
+    if (response.ok) {
+      // Parse server message if available
+      if (data._server_messages) {
+        try {
+          const serverMessages = JSON.parse(data._server_messages);
+          if (Array.isArray(serverMessages)) {
+            const firstMessage = JSON.parse(serverMessages[0]);
+            forgotPasswordSuccess.value = firstMessage.message || "Password reset instructions have been sent to your email";
+          }
+        } catch (e) {
+          forgotPasswordSuccess.value = "Password reset instructions have been sent to your email";
+        }
+      } else {
+        forgotPasswordSuccess.value = "Password reset instructions have been sent to your email";
+      }
+      
+      // Auto-close after 5 seconds
+      setTimeout(closeForgotPassword, 5000);
     } else {
-      throw new Error(data.message || 'Failed to send reset instructions');
+      // Check for mail server not configured error
+      if (data.exc && data.exc.includes('MailNotEnabledError')) {
+        mailNotSetup.value = true;
+      } else {
+        throw new Error(data.message || 'Failed to send reset instructions');
+      }
     }
   } catch (error) {
     console.error('Password reset error:', error);
