@@ -2,9 +2,9 @@
   "name": "OMS",
   "short_name": "OMS",
   "description": "Order Management System",
-  "start_url": "/oms",
+  "start_url": "/oms/",
   "display": "standalone",
-  "scope": "/oms",
+  "scope": "/oms/",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",
   "icons": [
