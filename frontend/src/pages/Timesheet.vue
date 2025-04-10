@@ -1,8 +1,8 @@
 <template>
     <DocTypeView
-      doctype="Task"
+      doctype="Timesheet"
       titleField="subject"
-      :listFields="['status', 'project', 'priority', 'creation','allocated_to']"
+      :listFields="['status', 'start_date', 'total_hours', ]"
     />
   </template>
   

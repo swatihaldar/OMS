@@ -96,6 +96,7 @@ const universalDoctypes = [
   { name: "Issue", path: "issue" },
   { name: "Task", path: "task" }, 
   { name: "Project", path: "project" }, 
+  { name: "Timesheet", path: "timesheet"}
   // Add more doctypes here as needed
 ]
 

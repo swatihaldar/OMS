@@ -2,7 +2,7 @@
   <DocTypeView
     doctype="Issue"
     titleField="subject"
-    :listFields="['status', 'project', 'creation','custom_client_status']"
+    :listFields="['status', 'project', 'creation','custom_client_status','allocated_to']"
   />
 </template>
 

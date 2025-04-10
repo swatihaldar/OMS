@@ -1,4 +1,5 @@
-<template>
+```vue type="code" project="FormView" file="FormView.vue"
+[v0-no-op-code-block-prefix]<template>
   <div class="bg-white rounded-lg shadow-sm form-view">
     <!-- Scrollable Content Area -->
     <div class="p-4 md:p-6 overflow-y-auto form-content">
@@ -299,7 +300,7 @@
                   class="border rounded-lg overflow-hidden"
                   :class="{'border-red-500': isFieldInvalid(field.fieldname) && field.reqd}"
                 >
-                  <QuillEditor
+                  <!-- <QuillEditor
                     v-model:content="formData[field.fieldname]"
                     toolbar="full"
                     theme="snow"
@@ -307,7 +308,7 @@
                     :readOnly="field.read_only || isReadOnly"
                     class="min-h-[200px] max-h-[400px]"
                     @update:content="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
-                  />
+                  /> -->
                 </div>
               </div>
 
@@ -516,6 +517,21 @@
                   </button>
                 </div>
               </div>
+
+              <!-- Table fields -->
+              <div v-else-if="field.fieldtype === 'Table'">
+                <TableFieldComponent
+                  v-model="formData[field.fieldname]"
+                  :fieldname="field.fieldname"
+                  :label="field.label"
+                  :description="field.description"
+                  :required="field.reqd"
+                  :is-read-only="field.read_only || isReadOnly"
+                  :child-doctype="field.options"
+                  :parent-doctype="doctype"
+                  @change="(value) => handleFieldChange({ fieldname: field.fieldname, value })"
+                />
+              </div>
             </div>
           </template>
         </div>
@@ -560,6 +576,13 @@ import { QuillEditor } from '@vueup/vue-quill';
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import api from '@/utils/api';
 import { getHiddenFields } from '@/config/form-config';
+import TableFieldComponent from './TableFieldComponent.vue';
+
+// Add this right after the script setup line
+const components = {
+  QuillEditor,
+  TableFieldComponent
+};
 
 const props = defineProps({
   modelValue: {
@@ -787,6 +810,7 @@ const getFieldDisplayValue = (fieldname) => {
   const field = props.fields.find(f => f.fieldname === fieldname);
   if (!field) return formData.value[fieldname] || '';
   
+  // Always return the value regardless of read_only status
   if (field.fieldtype === 'Link') {
     const options = props.fieldOptions[fieldname] || linkFieldOptions.value[fieldname] || [];
     const option = options.find(opt => opt.value === formData.value[fieldname]);

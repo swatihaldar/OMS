@@ -38,6 +38,11 @@
         </div>
       </div>
       
+      <!-- Quick Actions -->
+      <div class="max-w-lg ml-4">
+        <QuickActions />
+      </div>
+      
       <!-- Issue Chart Button -->
       <!-- <div class="bg-white rounded-xl shadow-md p-4 mb-4 flex justify-between items-center">
         <h2 class="text-base md:text-lg font-semibold text-gray-800">Issue Status</h2>
@@ -61,10 +66,6 @@
       <!-- Tasks Section -->
       <UserTasks />
       
-      <!-- Quick Actions -->
-      <div class="mt-4">
-        <QuickActions />
-      </div>
     </div>
     
     <!-- Chart Popup -->

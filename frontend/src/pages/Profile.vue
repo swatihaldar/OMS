@@ -21,7 +21,7 @@
             </div>
           </div>
         </div>
-        <h2 class="mt-4 text-2xl font-semibold">{{ userData?.full_name }}</h2>
+        <h2 class="mt-4 text-2xl font-semibold">{{ userData?.full_name || 'User' }}</h2>
         <p class="text-gray-600">{{ employeeData?.designation || 'No Designation' }}</p>
         
         <div class="mt-4 flex items-center text-sm text-gray-500">
@@ -95,8 +95,10 @@
           </button>
           <button 
             @click="handleLogout" 
-            class="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+            class="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+            :disabled="isLoggingOut"
           >
+            <span v-if="isLoggingOut" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
             Logout
           </button>
         </div>
@@ -109,11 +111,14 @@
       title="Employee Details"
       :full-screen="isMobile"
     >
-      <div class="space-y-4">
-        <div v-for="(value, key) in employeeDetails" :key="key" class="bg-gray-50 p-4 rounded-lg">
-          <p class="text-sm text-gray-500 mb-1">{{ formatLabel(key) }}</p>
-          <p class="font-medium text-gray-800">{{ value || 'Not specified' }}</p>
+      <div v-if="Object.keys(employeeDetails).length > 0" class="space-y-4">
+        <div v-for="(field, key) in employeeDetailsFields" :key="key" class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">{{ field.label }}</p>
+          <p class="font-medium text-gray-800">{{ employeeDetails[field.key] || 'Not specified' }}</p>
         </div>
+      </div>
+      <div v-else class="p-4 text-center text-gray-500">
+        <p>No employee details available</p>
       </div>
     </BottomSheet>
 
@@ -123,11 +128,14 @@
       title="Company Information"
       :full-screen="isMobile"
     >
-      <div class="space-y-4">
-        <div v-for="(value, key) in companyInfo" :key="key" class="bg-gray-50 p-4 rounded-lg">
-          <p class="text-sm text-gray-500 mb-1">{{ formatLabel(key) }}</p>
-          <p class="font-medium text-gray-800">{{ value || 'Not specified' }}</p>
+      <div v-if="Object.keys(companyInfo).length > 0" class="space-y-4">
+        <div v-for="(field, key) in companyInfoFields" :key="key" class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">{{ field.label }}</p>
+          <p class="font-medium text-gray-800">{{ companyInfo[field.key] || 'Not specified' }}</p>
         </div>
+      </div>
+      <div v-else class="p-4 text-center text-gray-500">
+        <p>No company information available</p>
       </div>
     </BottomSheet>
 
@@ -137,11 +145,14 @@
       title="Contact Information"
       :full-screen="isMobile"
     >
-      <div class="space-y-4">
-        <div v-for="(value, key) in contactInfo" :key="key" class="bg-gray-50 p-4 rounded-lg">
-          <p class="text-sm text-gray-500 mb-1">{{ formatLabel(key) }}</p>
-          <p class="font-medium text-gray-800">{{ value || 'Not specified' }}</p>
+      <div v-if="Object.keys(contactInfo).length > 0" class="space-y-4">
+        <div v-for="(field, key) in contactInfoFields" :key="key" class="bg-gray-50 p-4 rounded-lg">
+          <p class="text-sm text-gray-500 mb-1">{{ field.label }}</p>
+          <p class="font-medium text-gray-800">{{ contactInfo[field.key] || 'Not specified' }}</p>
         </div>
+      </div>
+      <div v-else class="p-4 text-center text-gray-500">
+        <p>No contact information available</p>
       </div>
     </BottomSheet>
   </div>
@@ -165,10 +176,39 @@ const employeeData = ref(null);
 const activeSheet = ref(null);
 const isMobile = ref(window.innerWidth < 768);
 const showLogoutConfirm = ref(false);
+const isLoggingOut = ref(false);
 
 const employeeDetails = ref({});
 const companyInfo = ref({});
 const contactInfo = ref({});
+
+// Define field structures with labels for each section
+const employeeDetailsFields = [
+  { key: 'first_name', label: 'First Name' },
+  { key: 'middle_name', label: 'Middle Name' },
+  { key: 'last_name', label: 'Last Name' },
+  { key: 'gender', label: 'Gender' },
+  { key: 'date_of_birth', label: 'Date of Birth' },
+  { key: 'date_of_joining', label: 'Date of Joining' },
+  { key: 'employee_number', label: 'Employee Number' },
+  { key: 'status', label: 'Status' }
+];
+
+const companyInfoFields = [
+  { key: 'company', label: 'Company' },
+  { key: 'department', label: 'Department' },
+  { key: 'designation', label: 'Designation' },
+  { key: 'grade', label: 'Grade' },
+  { key: 'branch', label: 'Branch' },
+  { key: 'reports_to', label: 'Reports To' }
+];
+
+const contactInfoFields = [
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'mobile_no', label: 'Mobile Number' },
+  { key: 'company_name', label: 'Company Name' }
+];
 
 // Computed properties to control bottom sheet visibility
 const showEmployeeSheet = computed({
@@ -193,7 +233,7 @@ const showContactSheet = computed({
 });
 
 const getInitials = (name) => {
-  if (!name) return '';
+  if (!name) return 'U';
   return name
     .split(' ')
     .map(word => word[0])
@@ -215,10 +255,53 @@ const confirmLogout = () => {
 
 const handleLogout = async () => {
   try {
-    await fetch('/api/method/logout');
-    window.location.href = '/oms/account/login';
+    isLoggingOut.value = true;
+    
+    // Try multiple logout approaches to ensure it works
+    try {
+      // First approach: Standard Frappe logout
+      await fetch('/api/method/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.warn('First logout approach failed:', error);
+    }
+    
+    try {
+      // Second approach: Custom OMS logout
+      await fetch('/api/method/oms.api.logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.warn('Second logout approach failed:', error);
+    }
+    
+    // Clear any local storage or session storage items
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear cookies by setting them to expire
+    document.cookie.split(";").forEach(function(c) {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+    
+    // Redirect to login page
+    setTimeout(() => {
+      window.location.href = '/oms/account/login';
+    }, 500);
   } catch (error) {
     console.error('Error logging out:', error);
+    alert('Failed to log out. Please try again.');
+    isLoggingOut.value = false;
+    showLogoutConfirm.value = false;
   }
 };
 
@@ -266,8 +349,18 @@ onMounted(async () => {
         const employee = employeeDataResponse.message[0];
         employeeData.value = employee;
         
-        // Organize data for different sections
+        // Initialize all fields with null values to ensure they appear in the UI
+        employeeDetailsFields.forEach(field => {
+          employeeDetails.value[field.key] = null;
+        });
+        
+        companyInfoFields.forEach(field => {
+          companyInfo.value[field.key] = null;
+        });
+        
+        // Populate employee details
         employeeDetails.value = {
+          ...employeeDetails.value,
           first_name: employee.first_name,
           middle_name: employee.middle_name,
           last_name: employee.last_name,
@@ -278,7 +371,9 @@ onMounted(async () => {
           status: employee.status
         };
         
+        // Populate company info
         companyInfo.value = {
+          ...companyInfo.value,
           company: employee.company,
           department: employee.department,
           designation: employee.designation,
@@ -286,8 +381,24 @@ onMounted(async () => {
           branch: employee.branch,
           reports_to: employee.reports_to,
         };
+      } else {
+        // Initialize with empty fields if no employee data
+        employeeDetailsFields.forEach(field => {
+          employeeDetails.value[field.key] = null;
+        });
         
-        // Fetch contact information
+        companyInfoFields.forEach(field => {
+          companyInfo.value[field.key] = null;
+        });
+      }
+      
+      // Initialize contact fields
+      contactInfoFields.forEach(field => {
+        contactInfo.value[field.key] = null;
+      });
+      
+      // Fetch contact information
+      try {
         const contactResponse = await fetch('/api/method/frappe.client.get_list', {
           method: 'POST',
           headers: {
@@ -304,13 +415,18 @@ onMounted(async () => {
         
         if (contactDataResponse.message?.[0]) {
           const contact = contactDataResponse.message[0];
+          
+          // Populate contact info
           contactInfo.value = {
+            ...contactInfo.value,
             email: contact.email_id,
             phone: contact.phone,
             mobile_no: contact.mobile_no,
             company_name: contact.company_name,
           };
         }
+      } catch (error) {
+        console.error('Error fetching contact data:', error);
       }
     }
   } catch (error) {

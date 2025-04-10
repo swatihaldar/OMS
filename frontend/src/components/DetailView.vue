@@ -1,14 +1,14 @@
 <template>
-  <div class="bg-white min-h-screen">
+  <div class="min-h-screen">
     <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center items-center py-8">
+    <div v-if="loading" class="flex justify-center items-center py-8 bg-white">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
     </div>
 
     <!-- Error State -->
     <div
       v-else-if="error"
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 mx-4"
+      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 mx-4 bg-white"
     >
       <p>{{ error }}</p>
       <button
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Detail View -->
-    <div v-else>
+    <div v-else class="bg-white">
       <!-- Header with Actions -->
       <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div class="px-4 py-3 max-w-3xl mx-auto flex items-center justify-between">
@@ -30,25 +30,32 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 class="text-xl font-semibold text-gray-900">{{ recordTitle }} </h1>
+            <h1 class="text-xl font-semibold text-gray-900">{{ recordTitle }}</h1>
           </div>
           
           <div class="flex items-center gap-2">
+            <!-- Assignment indicator -->
+            <!-- <div v-if="assignedTo" class="flex items-center px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-200">
+              <UserCircleIcon class="h-4 w-4 mr-1" />
+              <span>{{ getAssignedUserInitials(assignedTo) }}</span>
+            </div> -->
+            
             <button
               v-if="!isEditing && canEdit"
               @click="startEditing"
-              class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="flex items-center px-3 py-1 bg-blue-50 text-blue-600 text-sm rounded-full border border-blue-600 hover:bg-blue-50 transition-colors"
               title="Edit"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
+              Edit
             </button>
             
             <button
               v-if="!isEditing && canDelete"
               @click="confirmDelete"
-              class="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              class="p-2 bg-red-50 text-red-500 rounded-full border border-red-500 hover:bg-red-50 transition-colors"
               title="Delete"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -122,6 +129,36 @@
         <!-- Desktop View: All sections -->
         <div class="hidden md:block max-w-3xl mx-auto p-6">
           <div class="space-y-6">
+            <!-- Assignment Information -->
+            <!-- <div v-if="assignedTo" class="bg-blue-50 p-4 rounded-lg mb-6">
+              <div class="flex items-center">
+                <UserCircleIcon class="h-5 w-5 text-blue-700 mr-2" />
+                <span class="text-blue-700 font-medium">Assigned to: {{ assignedTo }}</span>
+              </div>
+            </div> -->
+
+            <div class="bg-blue-50 p-4 rounded-lg mb-6">
+              <div class="flex items-center mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mr-2">Assigned To</h3>
+                <AssignmentDialog 
+                  :doctype="doctype" 
+                  :docname="recordId" 
+                  @assignment-added="handleAssignmentAdded" 
+                  @assignment-error="handleAssignmentError"
+                />
+              </div>
+              
+              <AssignmentList 
+                :doctype="doctype" 
+                :docname="recordId" 
+                @assignment-removed="handleAssignmentRemoved" 
+                @assignment-error="handleAssignmentError"
+              />
+            </div>
+            
             <template v-for="(section, sectionIndex) in nonEmptySections" :key="sectionIndex">
               <div :class="{ 'border-t border-gray-200 pt-6': sectionIndex > 0 }">
                 <h3 v-if="section.label" class="text-lg font-medium text-gray-900 mb-4">
@@ -143,7 +180,7 @@
                           <!-- Link fields -->
                           <div
                             v-if="field.fieldtype === 'Link'"
-                            class="text-blue-600"
+                            class="text-blue-800 font-medium"
                           >
                             {{ getFieldDisplayValue(field) }}
                           </div>
@@ -151,7 +188,7 @@
                           <!-- Select fields -->
                           <div
                             v-else-if="field.fieldtype === 'Select'"
-                            class="text-blue-600"
+                            class="text-blue-800 font-medium"
                           >
                             {{ record[field.fieldname] }}
                           </div>
@@ -167,7 +204,7 @@
                           <!-- Checkbox fields -->
                           <div
                             v-else-if="field.fieldtype === 'Check'"
-                            class="text-blue-600"
+                            class="text-blue-800 font-medium"
                           >
                             <span
                               v-if="record[field.fieldname]"
@@ -224,7 +261,7 @@
                             <a
                               :href="record[field.fieldname]"
                               target="_blank"
-                              class="text-blue-600 hover:underline flex items-center"
+                              class="text-blue-800 hover:underline flex items-center font-medium"
                             >
                               <svg
                                 class="h-5 w-5 mr-1"
@@ -249,7 +286,7 @@
                               field.fieldtype === 'Date' ||
                               field.fieldtype === 'Datetime'
                             "
-                            class="text-blue-600"
+                            class="text-blue-800 font-medium"
                           >
                             {{ formatDate(record[field.fieldname]) }}
                           </div>
@@ -263,13 +300,13 @@
                               class="h-5 w-5 rounded mr-2" 
                               :style="{ backgroundColor: record[field.fieldname] }"
                             ></div>
-                            <span class="text-blue-600">{{ record[field.fieldname] }}</span>
+                            <span class="text-blue-800 font-medium">{{ record[field.fieldname] }}</span>
                           </div>
 
                           <!-- Small Text fields -->
                           <div
                             v-else-if="field.fieldtype === 'Small Text'"
-                            class="text-blue-600 whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm"
+                            class="text-blue-800 font-medium whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm"
                           >
                             {{ record[field.fieldname] }}
                           </div>
@@ -297,7 +334,7 @@
                                   <td 
                                     v-for="childField in getVisibleChildTableFields(field)" 
                                     :key="childField.fieldname" 
-                                    class="px-3 py-2 text-sm text-blue-600"
+                                    class="px-3 py-2 text-sm text-blue-800 font-medium"
                                     :style="getColumnStyle(childField)"
                                   >
                                     <!-- Different display formats based on field type -->
@@ -360,7 +397,7 @@
                           </div>
 
                           <!-- Default field display -->
-                          <div v-else class="text-blue-600">
+                          <div v-else class="text-blue-800 font-medium">
                             {{ record[field.fieldname] }}
                           </div>
                         </div>
@@ -391,7 +428,7 @@
                     <div v-for="record in group" :key="record.name" class="bg-white p-3 rounded border border-gray-200 hover:shadow-md transition-shadow">
                       <a 
                         :href="`/${getRouteFromDoctype(doctype)}/${record.name}`"
-                        class="flex justify-between items-center text-blue-600 hover:text-blue-800"
+                        class="flex justify-between items-center text-blue-800 hover:text-blue-900 font-medium"
                         @click.prevent="navigateToLinkedRecord(doctype, record.name)"
                       >
                         <div class="flex items-center">
@@ -426,19 +463,19 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div class="text-sm font-medium text-gray-500 mb-1">Created By</div>
-                  <div class="text-blue-600">{{ record.owner || 'Unknown' }}</div>
+                  <div class="text-blue-800 font-medium">{{ record.owner || 'Unknown' }}</div>
                 </div>
                 <div>
                   <div class="text-sm font-medium text-gray-500 mb-1">Created On</div>
-                  <div class="text-blue-600">{{ formatDate(record.creation) }}</div>
+                  <div class="text-blue-800 font-medium">{{ formatDate(record.creation) }}</div>
                 </div>
                 <div>
                   <div class="text-sm font-medium text-gray-500 mb-1">Last Modified By</div>
-                  <div class="text-blue-600">{{ record.modified_by || 'Unknown' }}</div>
+                  <div class="text-blue-800 font-medium">{{ record.modified_by || 'Unknown' }}</div>
                 </div>
                 <div>
                   <div class="text-sm font-medium text-gray-500 mb-1">Last Modified On</div>
-                  <div class="text-blue-600">{{ formatDate(record.modified) }}</div>
+                  <div class="text-blue-800 font-medium">{{ formatDate(record.modified) }}</div>
                 </div>
               </div>
             </div>
@@ -447,6 +484,40 @@
 
         <!-- Mobile view: Active tab section -->
         <div class="md:hidden p-4">
+          <!-- Assignment Information for mobile -->
+          <!-- <div v-if="assignedTo && activeTab === 0" class="bg-blue-50 p-3 rounded-lg mb-4">
+            <div class="flex items-center">
+              <UserCircleIcon class="h-5 w-5 text-blue-700 mr-2" />
+              <span class="text-blue-700 font-medium">Assigned to: {{ assignedTo }}</span>
+            </div>
+          </div> -->
+
+          <div v-if="activeTab === 0" class="bg-blue-50 px-3 py-2 rounded-lg mb-4">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+      <h3 class="text-sm font-medium text-gray-900 whitespace-nowrap">Assigned To</h3>
+      <AssignmentList 
+        class="flex-shrink-0"
+        :doctype="doctype" 
+        :docname="recordId" 
+        @assignment-removed="handleAssignmentRemoved" 
+        @assignment-error="handleAssignmentError"
+      />
+    </div>
+    <AssignmentDialog 
+      class="flex-shrink-0"
+      :doctype="doctype" 
+      :docname="recordId" 
+      @assignment-added="handleAssignmentAdded" 
+      @assignment-error="handleAssignmentError"
+    />
+  </div>
+</div>
+
+          
           <!-- Section content for active tab -->
           <div v-if="activeTab < nonEmptySections.length">
             <div class="space-y-4">
@@ -463,7 +534,7 @@
                     <!-- Link fields -->
                     <div
                       v-if="field.fieldtype === 'Link'"
-                      class="text-blue-600"
+                      class="text-blue-800 font-medium"
                     >
                       {{ getFieldDisplayValue(field) }}
                     </div>
@@ -471,7 +542,7 @@
                     <!-- Select fields -->
                     <div
                       v-else-if="field.fieldtype === 'Select'"
-                      class="text-blue-600"
+                      class="text-blue-800 font-medium"
                     >
                       {{ record[field.fieldname] }}
                     </div>
@@ -487,7 +558,7 @@
                     <!-- Checkbox fields -->
                     <div
                       v-else-if="field.fieldtype === 'Check'"
-                      class="text-blue-600"
+                      class="text-blue-800 font-medium"
                     >
                       <span
                         v-if="record[field.fieldname]"
@@ -544,7 +615,7 @@
                       <a
                         :href="record[field.fieldname]"
                         target="_blank"
-                        class="text-blue-600 hover:underline flex items-center"
+                        class="text-blue-800 hover:underline flex items-center font-medium"
                       >
                         <svg
                           class="h-5 w-5 mr-1"
@@ -569,7 +640,7 @@
                         field.fieldtype === 'Date' ||
                         field.fieldtype === 'Datetime'
                       "
-                      class="text-blue-600"
+                      class="text-blue-800 font-medium"
                     >
                       {{ formatDate(record[field.fieldname]) }}
                     </div>
@@ -583,13 +654,13 @@
                         class="h-5 w-5 rounded mr-2" 
                         :style="{ backgroundColor: record[field.fieldname] }"
                       ></div>
-                      <span class="text-blue-600">{{ record[field.fieldname] }}</span>
+                      <span class="text-blue-800 font-medium">{{ record[field.fieldname] }}</span>
                     </div>
 
                     <!-- Small Text fields -->
                     <div
                       v-else-if="field.fieldtype === 'Small Text'"
-                      class="text-blue-600 whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm"
+                      class="text-blue-800 font-medium whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm"
                     >
                       {{ record[field.fieldname] }}
                     </div>
@@ -617,7 +688,7 @@
                             <td 
                               v-for="childField in getVisibleChildTableFields(field)" 
                               :key="childField.fieldname" 
-                              class="px-3 py-2 text-sm text-blue-600"
+                              class="px-3 py-2 text-sm text-blue-800 font-medium"
                               :style="getColumnStyle(childField)"
                             >
                               <!-- Different display formats based on field type -->
@@ -680,7 +751,7 @@
                     </div>
 
                     <!-- Default field display -->
-                    <div v-else class="text-blue-600">
+                    <div v-else class="text-blue-800 font-medium">
                       {{ record[field.fieldname] }}
                     </div>
                   </div>
@@ -700,7 +771,7 @@
                 <div v-for="record in group" :key="record.name" class="border rounded-lg p-3">
                   <a 
                     :href="`/${getRouteFromDoctype(doctype)}/${record.name}`" 
-                    class="text-blue-600 hover:underline font-medium"
+                    class="text-blue-800 hover:underline font-medium"
                     @click.prevent="navigateToLinkedRecord(doctype, record.name)"
                   >
                     {{ record.title || record.name }}
@@ -722,19 +793,19 @@
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Created By
               </div>
-              <div class="text-blue-600">{{ record.owner || 'Unknown' }}</div>
+              <div class="text-blue-800 font-medium">{{ record.owner || 'Unknown' }}</div>
             </div>
             <div class="mb-4 border-b pb-4">
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Created On
               </div>
-              <div class="text-blue-600">{{ formatDate(record.creation) }}</div>
+              <div class="text-blue-800 font-medium">{{ formatDate(record.creation) }}</div>
             </div>
             <div class="mb-4 border-b pb-4">
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Last Modified By
               </div>
-              <div class="text-blue-600">
+              <div class="text-blue-800 font-medium">
                 {{ record.modified_by || 'Unknown' }}
               </div>
             </div>
@@ -742,34 +813,10 @@
               <div class="text-sm font-medium text-gray-500 mb-1">
                 Last Modified On
               </div>
-              <div class="text-blue-600">{{ formatDate(record.modified) }}</div>
+              <div class="text-blue-800 font-medium">{{ formatDate(record.modified) }}</div>
             </div>
           </div>
         </div>
-
-        <!-- Back Button -->
-        <!-- <div class="p-4 border-t border-gray-200 max-w-3xl mx-auto">
-          <button
-            @click="$router.push(`/${doctypeRoute}`)"
-            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-4 w-4 mr-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            Back to List
-          </button>
-        </div> -->
       </div>
     </div>
 
@@ -855,6 +902,9 @@ import { useRouter } from 'vue-router'
 import { getDocTypePermissions, getCurrentUser } from '../utils/permissions'
 import { shouldHideViewField } from '../config/field-config'
 import EditForm from './EditForm.vue'
+import { UserCircleIcon } from '@heroicons/vue/24/outline';
+import AssignmentDialog from './AssignmentDialog.vue';
+import AssignmentList from './AssignmentList.vue';
 
 const props = defineProps({
   doctype: {
@@ -896,6 +946,7 @@ const currentUser = ref(null)
 const linkedRecords = ref([])
 const childTableFields = ref({})
 const activeTab = ref(0) // For mobile section tabs
+const assignedTo = ref(null) // Store the assigned user
 
 // Image modal
 const showImageModal = ref(false)
@@ -966,6 +1017,14 @@ const getColumnStyle = (field) => {
   }
   
   return style;
+};
+
+// Get the initials of the assigned user
+const getAssignedUserInitials = (email) => {
+  if (!email) return '';
+  
+  // Extract initials from email (first two characters)
+  return email.substring(0, 2).toUpperCase();
 };
 
 // Organize fields into sections and columns
@@ -1096,6 +1155,38 @@ async function fetchDocument(doctype, name) {
   } catch (error) {
     console.error(`Error fetching ${doctype}:`, error)
     throw error
+  }
+}
+
+// Fetch assignment information
+async function fetchAssignmentInfo(doctype, name) {
+  try {
+    const response = await fetch('/api/method/frappe.client.get_list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doctype: 'ToDo',
+        fields: ['allocated_to'],
+        filters: {
+          reference_type: doctype,
+          reference_name: name,
+          status: 'Open'
+        }
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.message && data.message.length > 0) {
+      // Get the first assignment
+      assignedTo.value = data.message[0].allocated_to;
+      console.log(`Document is assigned to: ${assignedTo.value}`);
+    } else {
+      assignedTo.value = null;
+    }
+  } catch (error) {
+    console.error(`Error fetching assignment info:`, error);
+    assignedTo.value = null;
   }
 }
 
@@ -1535,6 +1626,9 @@ const fetchRecord = async () => {
       // Create a deep copy for editing
       editedRecord.value = JSON.parse(JSON.stringify(data))
 
+      // Fetch assignment information
+      await fetchAssignmentInfo(props.doctype, props.recordId)
+      
       // Fetch linked records
       linkedRecords.value = await fetchLinkedRecords(props.doctype, props.recordId)
 
@@ -2089,4 +2183,3 @@ watch(
   }
 }
 </style>
-

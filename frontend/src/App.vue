@@ -26,6 +26,7 @@ const hideNavBars = computed(() => {
          route.path === '/account/login' ||
          route.path.includes('/task/') ||
          route.path.includes('/issue/') ||
+         route.path.includes('/timesheet/') ||
          (route.name && 
           (route.name.includes('Detail') || 
            route.name.includes('Edit')))

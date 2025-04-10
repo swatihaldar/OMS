@@ -425,11 +425,9 @@ async function fetchDocumentList(options) {
   }
 }
 
-/**
- * Create a new document
- * @param {Object} doc - The document object
- * @returns {Promise<Object>} - The created document
- */
+
+//  Create a new document
+ 
 async function createDocument(doc) {
   try {
     const response = await fetch("/api/method/frappe.client.insert", {
@@ -694,6 +692,67 @@ async function uploadFile(file, doctype, fieldname, docname) {
     throw error;
   }
 }
+
+
+
+
+
+export async function fetchChildTableFields(doctype) {
+  try {
+    const response = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        doctype: doctype,
+        with_parent: 1,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message && data.message.docs && data.message.docs[0]) {
+      // Get the doctype definition
+      const doctypeDef = data.message.docs[0]
+
+      // Return the fields array
+      return doctypeDef.fields || []
+    }
+
+    return []
+  } catch (error) {
+    console.error(`Error fetching fields for ${doctype}:`, error)
+    return []
+  }
+}
+
+
+export async function fetchLinkOption(doctype, fields = ["name"], filters = {}) {
+  try {
+    const response = await fetch("/api/method/frappe.client.get_list", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        doctype,
+        fields,
+        filters,
+        limit_page_length: 500, // Fetch a reasonable number of records
+      }),
+    })
+
+    const data = await response.json()
+
+    if (data.message) {
+      return data.message
+    }
+
+    return []
+  } catch (error) {
+    console.error(`Error fetching options for ${doctype}:`, error)
+    return []
+  }
+}
+
+
 
 /**
  * Clear the API cache

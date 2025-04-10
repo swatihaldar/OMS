@@ -100,6 +100,20 @@
               />
             </div>
             
+            <!-- Assignment filter -->
+            <div class="mb-3">
+              <label class="block text-xs font-medium text-gray-700 mb-1">Assignment</label>
+              <select
+                v-model="assignmentFilter"
+                class="w-full border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">All Records</option>
+                <option value="assigned_to_me">Assigned to Me</option>
+                <option value="created_by_me">Created by Me</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+            
             <div class="mb-3">
               <label class="block text-xs font-medium text-gray-700 mb-1">Sort By</label>
               <select
@@ -178,6 +192,17 @@
               <div v-if="record.status" :class="getStatusClass(record.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
                 {{ record.status }}
               </div>
+              
+              <!-- Assignment indicators -->
+              <div v-if="isAssignedToCurrentUser(record)" class="flex items-center text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                <UserCircleIcon class="h-4 w-4 mr-1" />
+                <span class="text-xs font-medium">Assigned to me</span>
+              </div>
+              
+              <div v-else-if="isAssignedToOthers(record)" class="flex items-center text-gray-600 bg-gray-50 px-2 py-0.5 rounded-full">
+                <UserCircleIcon class="h-4 w-4 mr-1" />
+                <span class="text-xs font-medium">{{ getAssignedUserInitials(record) }}</span>
+              </div>
             </div>
             <h3 class="font-semibold text-gray-800 mt-1">{{ getRecordTitle(record) }}</h3>
             <div class="flex flex-wrap gap-4 mt-2">
@@ -222,6 +247,7 @@ import {
   PlusIcon,
   ExclamationTriangleIcon,
   UserIcon,
+  UserCircleIcon,
   MagnifyingGlassIcon,
   FolderIcon,
   FlagIcon,
@@ -269,6 +295,9 @@ const error = ref(null);
 const linkFieldOptions = ref({});
 const userPermissions = ref([]);
 const canCreate = ref(false);
+const currentUser = ref(null);
+const assignedRecords = ref({}); // Map of record names to assignment status
+const assignedUsers = ref({}); // Map of record names to assigned users
 
 // List view state
 const searchQuery = ref('');
@@ -276,6 +305,7 @@ const statusFilter = ref('');
 const customFilters = ref({});
 const dateFilters = ref({});
 const sortOption = ref('creation desc');
+const assignmentFilter = ref(''); // New filter for assignments
 const showFilterPanel = ref(false);
 const currentPage = ref(1);
 const pageSize = ref(20);
@@ -291,6 +321,7 @@ const doctypeRoute = computed(() => {
 const activeFilters = computed(() => {
   return statusFilter.value !== '' || 
          searchQuery.value !== '' || 
+         assignmentFilter.value !== '' ||
          Object.values(customFilters.value).some(v => v !== '') ||
          Object.values(dateFilters.value).some(v => v.from || v.to);
 });
@@ -299,6 +330,7 @@ const filterCount = computed(() => {
   let count = 0;
   if (statusFilter.value) count++;
   if (searchQuery.value) count++;
+  if (assignmentFilter.value) count++;
   
   count += Object.values(customFilters.value).filter(v => v !== '').length;
   
@@ -475,6 +507,78 @@ const fetchLinkFieldOptions = async () => {
   }
 };
 
+// Fetch assigned records for the current user
+const fetchAssignedRecords = async () => {
+  try {
+    if (!currentUser.value) {
+      currentUser.value = await getCurrentUser();
+    }
+    
+    // Fetch assignments for the current doctype
+    const response = await fetch('/api/method/frappe.client.get_list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doctype: 'ToDo',
+        fields: ['reference_name', 'allocated_to'],
+        filters: {
+          reference_type: props.doctype,
+          status: 'Open'
+        }
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.message) {
+      // Create maps for assignments
+      const assignedMap = {};
+      const userMap = {};
+      
+      data.message.forEach(todo => {
+        // Check if assigned to current user
+        if (todo.allocated_to === currentUser.value) {
+          assignedMap[todo.reference_name] = true;
+        }
+        
+        // Store the assigned user for each record
+        userMap[todo.reference_name] = todo.allocated_to;
+      });
+      
+      assignedRecords.value = assignedMap;
+      assignedUsers.value = userMap;
+      
+      console.log('Assigned records:', assignedRecords.value);
+      console.log('Assigned users:', assignedUsers.value);
+    }
+  } catch (error) {
+    console.error('Error fetching assigned records:', error);
+  }
+};
+
+// Check if a record is assigned to the current user
+const isAssignedToCurrentUser = (record) => {
+  // Check if the record is in our assignedRecords map
+  return assignedRecords.value[record.name] === true || 
+         // Also check if allocated_to field matches current user (if it exists in the record)
+         (record.allocated_to && record.allocated_to === currentUser.value);
+};
+
+// Check if a record is assigned to someone else
+const isAssignedToOthers = (record) => {
+  return assignedUsers.value[record.name] && 
+         assignedUsers.value[record.name] !== currentUser.value;
+};
+
+// Get the initials of the assigned user
+const getAssignedUserInitials = (record) => {
+  const assignedUser = assignedUsers.value[record.name];
+  if (!assignedUser) return '';
+  
+  // Extract initials from email (first two characters)
+  return assignedUser.substring(0, 2).toUpperCase();
+};
+
 // Fetch all records first, then handle pagination locally
 const fetchAllRecords = async () => {
   loading.value = true;
@@ -484,11 +588,69 @@ const fetchAllRecords = async () => {
     // Apply user permissions as filters
     applyUserPermissionsToFilters(filters);
 
+    // Get current user if not already set
+    if (!currentUser.value) {
+      currentUser.value = await getCurrentUser();
+    }
+
+    // Fetch assigned records for the current user
+    await fetchAssignedRecords();
+
+    // Create OR conditions for owner and assigned records
+    let orFilters = [];
+    
+    // Apply assignment filter
+    if (assignmentFilter.value) {
+      if (assignmentFilter.value === 'assigned_to_me') {
+        // Only show records assigned to current user
+        const assignedNames = Object.keys(assignedRecords.value);
+        if (assignedNames.length > 0) {
+          orFilters.push(['name', 'in', assignedNames]);
+        } else {
+          // If no assignments, add a condition that will return no results
+          orFilters.push(['name', '=', 'no-assignments-found']);
+        }
+        
+        // Also check allocated_to field if it exists
+        const hasAllocatedToField = formFields.value.some(field => field.fieldname === 'allocated_to');
+        if (hasAllocatedToField) {
+          orFilters.push(['allocated_to', '=', currentUser.value]);
+        }
+      } 
+      else if (assignmentFilter.value === 'created_by_me') {
+        // Only show records created by current user
+        orFilters.push(['owner', '=', currentUser.value]);
+      }
+      else if (assignmentFilter.value === 'both') {
+        // Show records either created by or assigned to current user
+        const assignedNames = Object.keys(assignedRecords.value);
+        
+        if (assignedNames.length > 0) {
+          orFilters.push(['name', 'in', assignedNames]);
+        }
+        
+        // Also check allocated_to field if it exists
+        const hasAllocatedToField = formFields.value.some(field => field.fieldname === 'allocated_to');
+        if (hasAllocatedToField) {
+          orFilters.push(['allocated_to', '=', currentUser.value]);
+        }
+        
+        orFilters.push(['owner', '=', currentUser.value]);
+      }
+    }
     // Add filter to only show records owned by the current user if showOnlyOwnRecords is true
-    if (props.showOnlyOwnRecords) {
-      const currentUser = await getCurrentUser();
-      if (currentUser) {
-        filters.owner = currentUser;
+    else if (props.showOnlyOwnRecords && currentUser.value) {
+      orFilters.push(['owner', '=', currentUser.value]);
+      
+      // Add condition for allocated_to field if it exists
+      const hasAllocatedToField = formFields.value.some(field => field.fieldname === 'allocated_to');
+      if (hasAllocatedToField) {
+        orFilters.push(['allocated_to', '=', currentUser.value]);
+      }
+      
+      // Also include records that are in our assignedRecords map
+      if (Object.keys(assignedRecords.value).length > 0) {
+        orFilters.push(['name', 'in', Object.keys(assignedRecords.value)]);
       }
     }
     
@@ -520,13 +682,14 @@ const fetchAllRecords = async () => {
     }
 
     console.log(`Fetching all records with filters:`, filters);
+    console.log(`OR filters:`, orFilters);
 
     // Fetch all records (with a high limit)
     const result = await api.fetchDocumentList({
       doctype: props.doctype,
       fields: ['*'],
       filters: filters,
-      orFilters: searchConditions.length > 0 ? searchConditions : undefined,
+      orFilters: orFilters.length > 0 ? orFilters : (searchConditions.length > 0 ? searchConditions : undefined),
       limit: 1000, // Set a high limit to get all records
       orderBy: sortOption.value
     });
@@ -641,6 +804,7 @@ const getFieldIcon = (field) => {
       return FlagIcon;
     case 'custom_raised_by_contact':
     case 'raised_by':
+    case 'allocated_to':
       return UserIcon;
     case 'creation':
     case 'modified':
@@ -708,6 +872,7 @@ const resetFilters = () => {
   sortOption.value = 'creation desc';
   searchQuery.value = '';
   customFilters.value = {};
+  assignmentFilter.value = '';
   
   // Reset date filters
   for (const key in dateFilters.value) {
@@ -758,9 +923,13 @@ onMounted(async () => {
   console.log(`ListView component mounted for ${props.doctype}`);
   
   try {
+    // Get current user
+    currentUser.value = await getCurrentUser();
+    
     await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
+    await fetchAssignedRecords(); // Fetch assigned records
     await fetchAllRecords();
   } catch (error) {
     console.error('Error initializing component:', error);
@@ -786,6 +955,7 @@ watch(() => props.doctype, async () => {
     await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
+    await fetchAssignedRecords(); // Fetch assigned records when doctype changes
     await fetchAllRecords();
   } catch (error) {
     console.error('Error when doctype changed:', error);
