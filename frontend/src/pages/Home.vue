@@ -1,66 +1,135 @@
 <template>
   <div class="bg-gray-50 min-h-screen pb-20">
-    <div class="p-4 max-w-7xl mx-auto">
-      <!-- Welcome Section -->
-      <div class="bg-white rounded-xl shadow-md p-6 mb-4">
-        <div class="flex items-center justify-between mb-4">
+    <div class="max-w-8xl mx-auto p-4">
+      <!-- Welcome Section with Enhanced Design -->
+      <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white relative overflow-hidden">
+        <!-- Decorative elements -->
+        <div class="absolute -right-16 -top-16 w-48 h-48 rounded-full bg-white opacity-10"></div>
+        <div class="absolute -left-8 bottom-0 w-32 h-32 rounded-full bg-white opacity-5"></div>
+        
+        <div class="flex items-center justify-between mb-6 relative z-10">
           <div>
-            <h1 class="text-xl md:text-2xl font-bold md:font-bold text-gray-800">Welcome back, {{ userName }}</h1>
-            <p class="text-sm md:text-base text-gray-600">{{ currentDate }}</p>
+            <h1 class="text-2xl md:text-3xl font-bold text-white">Welcome back, {{ userName }}</h1>
+            <p class="text-sm md:text-base text-blue-100 opacity-90 mt-1">{{ currentDate }}</p>
           </div>
-          <div class="h-12 w-12 rounded-full overflow-hidden">
+          <div class="h-16 w-16 rounded-full overflow-hidden border-2 border-white shadow-md">
             <img v-if="userImage" :src="userImage" :alt="userName" class="h-full w-full object-cover" />
-            <div v-else class="h-full w-full flex items-center justify-center bg-blue-100 text-blue-600 font-bold text-lg">
+            <div v-else class="h-full w-full flex items-center justify-center bg-blue-400 text-white font-bold text-xl">
               {{ userInitials }}
             </div>
           </div>
         </div>
         
-        <div class="grid grid-cols-2 gap-3 mt-3">
-          <div class="bg-blue-50 rounded-lg p-3 relative overflow-hidden group hover:shadow-md transition-all duration-300">
-            <div class="text-xs md:text-sm text-blue-700 mb-1">My Open Issues</div>
-            <div class="text-xl md:text-2xl font-bold text-blue-900">{{ stats.openIssues }}</div>
-            <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-blue-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
+          <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
+            <div class="text-xs md:text-sm text-white mb-1 font-medium">My Open Issues</div>
+            <div class="text-xl md:text-2xl font-bold text-white">{{ stats.openIssues }}</div>
+            <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:opacity-30 transition-opacity">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
-          <div class="bg-green-50 rounded-lg p-3 relative overflow-hidden group hover:shadow-md transition-all duration-300">
-            <div class="text-xs md:text-sm text-green-700 mb-1">My Completed Tasks</div>
-            <div class="text-xl md:text-2xl font-bold text-green-900">{{ stats.completedTasks }}</div>
-            <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-green-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
+            <div class="text-xs md:text-sm text-white mb-1 font-medium">Completed Tasks</div>
+            <div class="text-xl md:text-2xl font-bold text-white">{{ stats.completedTasks }}</div>
+            <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:opacity-30 transition-opacity">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
           </div>
+          <!-- <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
+            <div class="text-xs md:text-sm text-white mb-1 font-medium">Active Projects</div>
+            <div class="text-xl md:text-2xl font-bold text-white">{{ stats.activeProjects || 3 }}</div>
+            <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:opacity-30 transition-opacity">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </div>
+          </div> -->
+          <!-- <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
+            <div class="text-xs md:text-sm text-white mb-1 font-medium">Hours Logged</div>
+            <div class="text-xl md:text-2xl font-bold text-white">{{ stats.hoursLogged || 24 }}</div>
+            <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:opacity-30 transition-opacity">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div> -->
         </div>
       </div>
       
-      <!-- Quick Actions -->
-      <div class="max-w-lg ml-4">
-        <QuickActions />
-      </div>
-      
-      <!-- Issue Chart Button -->
-      <!-- <div class="bg-white rounded-xl shadow-md p-4 mb-4 flex justify-between items-center">
-        <h2 class="text-base md:text-lg font-semibold text-gray-800">Issue Status</h2>
-        <button 
-          @click="showChartPopup = true" 
-          class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 flex items-center"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          View Chart
-        </button>
-      </div> -->
-      
-      <!-- Location Map -->
-      <div class="bg-white rounded-xl shadow-md p-4 mb-4">
-        <h2 class="text-base md:text-lg font-semibold text-gray-800 mb-3">My Location</h2>
-        <LocationMap />
+      <!-- Quick Actions with Enhanced Design -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-xl shadow-md p-5 transform transition-all duration-300 hover:shadow-lg">
+          <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Quick Actions
+          </h2>
+          <div class="grid grid-cols-2 gap-3">
+            <button 
+              @click="$router.push('/task/new')"
+              class="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200 group"
+            >
+              <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2 group-hover:bg-blue-200 transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <span class="text-sm font-medium text-gray-700">New Task</span>
+            </button>
+            <button 
+              @click="$router.push('/issue/new')"
+              class="flex flex-col items-center justify-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors duration-200 group"
+            >
+              <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mb-2 group-hover:bg-purple-200 transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <span class="text-sm font-medium text-gray-700">Report Issue</span>
+            </button>
+            <button 
+              @click="$router.push('/timesheet/new')"
+              class="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors duration-200 group"
+            >
+              <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-2 group-hover:bg-green-200 transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span class="text-sm font-medium text-gray-700">Log Time</span>
+            </button>
+            <button 
+              @click="$router.push('/project')"
+              class="flex flex-col items-center justify-center p-4 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors duration-200 group"
+            >
+              <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-2 group-hover:bg-amber-200 transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+              </div>
+              <span class="text-sm font-medium text-gray-700">Projects</span>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Location Map with Enhanced Design -->
+        <div class="bg-white rounded-xl shadow-md p-5 transform transition-all duration-300 hover:shadow-lg md:col-span-2">
+          <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            My Location
+          </h2>
+          <div class="rounded-lg overflow-hidden h-[200px] bg-gray-100">
+            <LocationMap />
+          </div>
+        </div>
       </div>
       
       <!-- Tasks Section -->
@@ -69,11 +138,11 @@
     </div>
     
     <!-- Chart Popup -->
-    <div v-if="showChartPopup" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-auto">
+    <div v-if="showChartPopup" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl">
         <div class="p-4 border-b flex justify-between items-center">
-          <h3 class="text-lg font-medium">My Issue Status</h3>
-          <button @click="showChartPopup = false" class="text-gray-500">
+          <h3 class="text-lg font-medium text-gray-800">My Issue Status</h3>
+          <button @click="showChartPopup = false" class="text-gray-500 hover:text-gray-700 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -93,7 +162,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import UserTasks from '../components/UserTasks.vue';
-import QuickActions from '../components/QuickActions.vue';
 import LocationMap from '../components/LocationMap.vue';
 import IssueChartStatus from '../components/IssueStatusChart.vue';
 
@@ -105,7 +173,9 @@ const showChartPopup = ref(false);
 
 const stats = ref({
   openIssues: 0,
-  completedTasks: 0
+  completedTasks: 0,
+  activeProjects: 3,
+  hoursLogged: 24
 });
 
 const formatDate = () => {
@@ -288,84 +358,52 @@ const fetchStats = async () => {
       }
     }
     
-    // If approach 2 didn't find any tasks, try approach 3
-    if (stats.value.completedTasks === 0) {
-      try {
-        // Approach 3: Try with custom field or different filter
-        const customTasksResponse = await fetch('/api/method/frappe.client.get_list', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            doctype: 'Task',
-            filters: { 
-              status: 'Completed'
-            },
-            or_filters: {
-              owner: currentUser,
-              modified_by: currentUser
-            },
-            limit: 0,
-            fields: ['count(name) as count']
-          })
-        });
-        
-        const customTasksData = await customTasksResponse.json();
-        if (customTasksData.message && customTasksData.message.length > 0) {
-          stats.value.completedTasks = customTasksData.message[0].count || 0;
-        }
-      } catch (error) {
-        console.error('Error with approach 3:', error);
+    // Try to get active projects count
+    try {
+      const projectsResponse = await fetch('/api/method/frappe.client.get_list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctype: 'Project',
+          filters: { 
+            status: 'Open'
+          },
+          limit: 0,
+          fields: ['count(name) as count']
+        })
+      });
+      
+      const projectsData = await projectsResponse.json();
+      if (projectsData.message && projectsData.message.length > 0) {
+        stats.value.activeProjects = projectsData.message[0].count || 3;
       }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
     }
     
-    // If all approaches failed, try a more general approach
-    if (stats.value.completedTasks === 0) {
-      try {
-        // Approach 4: Get all completed tasks and check if user is mentioned in any field
-        const allTasksResponse = await fetch('/api/method/frappe.client.get_list', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            doctype: 'Task',
-            filters: { 
-              status: 'Completed'
-            },
-            limit: 50,
-            fields: ['name']
-          })
-        });
-        
-        const allTasksData = await allTasksResponse.json();
-        if (allTasksData.message && allTasksData.message.length > 0) {
-          let userTaskCount = 0;
-          
-          // For each task, get full details and check if user is mentioned
-          for (const task of allTasksData.message) {
-            const taskDetailResponse = await fetch('/api/method/frappe.client.get', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                doctype: 'Task',
-                name: task.name
-              })
-            });
-            
-            const taskDetail = await taskDetailResponse.json();
-            if (taskDetail.message) {
-              // Check various fields where user might be mentioned
-              const taskData = JSON.stringify(taskDetail.message);
-              if (taskData.includes(currentUser)) {
-                userTaskCount++;
-              }
-            }
-          }
-          
-          stats.value.completedTasks = userTaskCount;
-        }
-      } catch (error) {
-        console.error('Error with approach 4:', error);
+    // Try to get hours logged
+    try {
+      const timesheetResponse = await fetch('/api/method/frappe.client.get_list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctype: 'Timesheet',
+          filters: { 
+            owner: currentUser
+          },
+          limit: 0,
+          fields: ['sum(total_hours) as total_hours']
+        })
+      });
+      
+      const timesheetData = await timesheetResponse.json();
+      if (timesheetData.message && timesheetData.message.length > 0) {
+        stats.value.hoursLogged = Math.round(timesheetData.message[0].total_hours || 0);
       }
+    } catch (error) {
+      console.error('Error fetching timesheet data:', error);
     }
+    
   } catch (error) {
     console.error('Error fetching stats:', error);
   }
@@ -380,4 +418,20 @@ onMounted(async () => {
 
 <style scoped>
 /* Add any component-specific styles here */
+.bg-gradient-to-r {
+  background-size: 200% 200%;
+  animation: gradientAnimation 15s ease infinite;
+}
+
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 </style>

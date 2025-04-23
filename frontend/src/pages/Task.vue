@@ -1,5 +1,5 @@
 <template>
-    <DocTypeView
+    <GenerateUI
       doctype="Task"
       titleField="subject"
       :listFields="['status', 'project', 'priority', 'creation','allocated_to']"
@@ -7,5 +7,5 @@
   </template>
   
   <script setup>
-  import DocTypeView from '@/components/DocTypeView.vue';
+  import GenerateUI from '../components/GenerateUI.vue';
   </script>

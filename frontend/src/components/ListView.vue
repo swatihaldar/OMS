@@ -1,7 +1,7 @@
 <template>
   <div class="p-4">
     <!-- Search and Filter Bar -->
-    <div class="bg-white rounded-lg shadow-sm p-3 mb-4 sticky top-0 z-10">
+    <div class="bg-white rounded-xl shadow-md p-3 mb-4 sticky top-0 z-10">
       <div class="flex items-center gap-2">
         <!-- Search -->
         <div class="flex-1 relative">
@@ -140,7 +140,7 @@
               </button>
               <button 
                 @click="applyFilters" 
-                class="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                class="px-3 py-1.5 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors"
               >
                 Apply
               </button>
@@ -151,7 +151,7 @@
         <button 
           v-if="canCreate"
           @click="$router.push(`/${doctypeRoute}/new`)" 
-          class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
+          class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg flex items-center hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-md"
         >
           <PlusIcon class="h-5 w-5 mr-1" />
           New
@@ -165,13 +165,15 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="records.length === 0" class="bg-white rounded-lg shadow-md p-6 text-center">
-      <ExclamationTriangleIcon class="h-12 w-12 mx-auto text-gray-400 mb-2" />
-      <p class="text-gray-600">No {{ doctype }} found</p>
+    <div v-else-if="records.length === 0" class="bg-white rounded-xl shadow-md p-6 text-center">
+      <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+        <ExclamationTriangleIcon class="h-8 w-8 text-blue-600" />
+      </div>
+      <p class="text-gray-600 mb-4">No {{ doctype }} found</p>
       <button 
         v-if="canCreate"
         @click="$router.push(`/${doctypeRoute}/new`)" 
-        class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg"
+        class="mt-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-md"
       >
         Create New {{ doctype }}
       </button>
@@ -183,11 +185,11 @@
         v-for="record in records"
         :key="record.name"
         @click="$router.push(`/${doctypeRoute}/${record.name}`)"
-        class="bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow"
+        class="bg-white rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-transparent hover:border-blue-100"
       >
         <div class="flex justify-between items-start">
           <div class="flex-1">
-            <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-2 flex-wrap gap-2">
               <span class="text-sm text-gray-500">{{ record.name }}</span>
               <div v-if="record.status" :class="getStatusClass(record.status)" class="px-2 py-0.5 rounded-full text-xs font-medium">
                 {{ record.status }}
@@ -204,10 +206,10 @@
                 <span class="text-xs font-medium">{{ getAssignedUserInitials(record) }}</span>
               </div>
             </div>
-            <h3 class="font-semibold text-gray-800 mt-1">{{ getRecordTitle(record) }}</h3>
+            <h3 class="font-semibold text-gray-800 mt-1 text-lg">{{ getRecordTitle(record) }}</h3>
             <div class="flex flex-wrap gap-4 mt-2">
               <div v-for="(field, index) in listDisplayFields" :key="index" class="flex items-center text-sm text-gray-500">
-                <component :is="getFieldIcon(field)" class="h-4 w-4 mr-1" />
+                <component :is="getFieldIcon(field)" class="h-4 w-4 mr-1 text-blue-500" />
                 <span>{{ getFieldLabel(field) }}: {{ getFieldValue(record, field) }}</span>
               </div>
             </div>
@@ -221,20 +223,25 @@
       <button
         @click="prevPage"
         :disabled="currentPage === 1"
-        class="px-4 py-2 bg-white border rounded-lg disabled:opacity-50"
+        class="px-4 py-2 bg-white border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors flex items-center"
       >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
         Previous
       </button>
-      <span class="text-sm text-gray-600">
+      <span class="text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border">
         Page {{ currentPage }} of {{ totalPages }} 
-        <!-- ({{ totalRecords }} records) -->
       </span>
       <button
         @click="nextPage"
         :disabled="currentPage === totalPages"
-        class="px-4 py-2 bg-white border rounded-lg disabled:opacity-50"
+        class="px-4 py-2 bg-white border rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors flex items-center"
       >
         Next
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
       </button>
     </div>
   </div>
@@ -1000,5 +1007,11 @@ onUnmounted(() => {
     border-radius: 2px;
     margin: 0.5rem auto 1rem;
   }
+}
+
+/* Add hover animation */
+.hover\:-translate-y-1:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 </style>

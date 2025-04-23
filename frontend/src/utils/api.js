@@ -202,6 +202,46 @@ async function fetchDoctypeFields(doctype) {
   }
 }
 
+
+// async function fetchDoctypeFields(doctype) {
+//   // Check cache first
+//   if (apiCache.doctypeFields[doctype]) {
+//     return apiCache.doctypeFields[doctype];
+//   }
+
+//   try {
+//     console.log(`Fetching doctype fields for ${doctype}...`);
+
+//     // Use standard Frappe API (which includes all field properties)
+//     const response = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         doctype: doctype,
+//       }),
+//     });
+
+//     const data = await response.json();
+
+//     if (data.message?.docs?.[0]?.fields) {
+//       const fields = data.message.docs[0].fields;
+
+//       // Cache the full field definitions (including all properties)
+//       apiCache.doctypeFields[doctype] = fields;
+//       console.log(`Fetched ${fields.length} fields with full properties`);
+//       return fields;
+//     } else {
+//       console.error("Failed to fetch fields from standard API");
+//       throw new Error("Failed to get doctype fields");
+//     }
+//   } catch (error) {
+//     console.error("Error fetching doctype fields:", error);
+//     throw error;
+//   }
+// }
+
 /**
  * Get field permissions for a doctype
  * @param {string} doctype - The doctype name
@@ -331,6 +371,8 @@ async function fetchDocument(doctype, name) {
     })
 
     const data = await response.json()
+    console.log('Data=',data);
+    // debugger;
 
     if (data.message) {
       return data.message

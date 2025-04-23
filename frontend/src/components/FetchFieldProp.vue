@@ -1,5 +1,4 @@
-```vue type="code" project="FormView" file="FormView.vue"
-[v0-no-op-code-block-prefix]<template>
+<template>
   <div class="bg-white rounded-lg shadow-sm form-view">
     <!-- Scrollable Content Area -->
     <div class="p-4 md:p-6 overflow-y-auto form-content">
@@ -109,7 +108,19 @@
           <template v-for="(field, index) in visibleFields" :key="field.fieldname">
             <!-- Section Break -->
             <div v-if="field.fieldtype === 'Section Break'" class="col-span-1 md:col-span-2 border-t border-gray-200 pt-6 mt-6">
-              <h3 v-if="field.label" class="text-lg font-medium text-gray-900 mb-4">{{ field.label }}</h3>
+              <!-- Collapsible Section Header -->
+              <div v-if="field.label" 
+                   :class="{'cursor-pointer': field.collapsible === 1}"
+                   class="flex items-center justify-between mb-4"
+                   @click="field.collapsible === 1 ? toggleSection(field.fieldname) : null">
+                <h3 class="text-lg font-medium text-gray-900">{{ field.label }}</h3>
+                <svg v-if="field.collapsible === 1" 
+                     class="h-5 w-5 text-gray-500 transition-transform duration-200" 
+                     :class="isSectionCollapsed(field.fieldname) ? '' : 'transform rotate-180'"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
 
             <!-- Column Break -->
@@ -117,8 +128,8 @@
               <!-- This creates a new column in the grid -->
             </div>
 
-            <!-- Regular fields -->
-            <div v-else class="field-container" :class="getColumnClass(index)">
+            <!-- Regular fields - Only show if not in a collapsed section -->
+            <div v-else-if="!isFieldInCollapsedSection(field, index)" class="field-container" :class="getColumnClass(index)">
 
               <!-- Link fields with search -->
               <div v-if="field.fieldtype === 'Link'" class="relative">
@@ -148,6 +159,7 @@
                     }"
                     :disabled="field.read_only || isReadOnly"
                     @focus="openLinkDropdown(field.fieldname)"
+                    @input="() => handleLinkFieldInput(field.fieldname)"
                     @blur="closeLinkDropdownDelayed(field.fieldname)"
                   />
                   <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -512,7 +524,7 @@
                     class="text-red-500 hover:text-red-600"
                   >
                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                   </button>
                 </div>
@@ -543,12 +555,11 @@
       <slot name="actions">
         <div class="flex flex-wrap gap-3">
           <button
-            v-if="mode === 'edit' && !isReadOnly"
             type="button"
-            @click="confirmDelete"
-            class="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+            @click="handleCancel"
+            class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
           >
-            Delete
+            Cancel
           </button>
           <button
             @click="handleSubmit"
@@ -577,6 +588,8 @@ import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import api from '@/utils/api';
 import { getHiddenFields } from '@/config/form-config';
 import TableFieldComponent from './TableFieldComponent.vue';
+import { useRouter } from 'vue-router';
+
 
 // Add this right after the script setup line
 const components = {
@@ -656,6 +669,8 @@ const linkSearchQueries = ref({});
 const activeLinkDropdown = ref(null);
 const userPermissions = ref([]);
 const tempFileUrls = ref({}); // Store temporary file URLs before document is saved
+const router = useRouter();
+const collapsedSections = ref({}); // Track which sections are collapsed
 
 // Computed properties
 const formData = computed({
@@ -736,41 +751,6 @@ const getColumnClass = (index) => {
   return 'col-span-1';
 };
 
-// const sortedOptionsCache = ref({});
-
-// const getOptionsForField = (field) => {
-//   const cacheKey = field.fieldname;
-  
-//   // Return cached sorted options if available
-//   if (sortedOptionsCache.value[cacheKey]) {
-//     return sortedOptionsCache.value[cacheKey];
-//   }
-
-//   let options = [];
-  
-//   if (props.fieldOptions[field.fieldname]) {
-//     options = props.fieldOptions[field.fieldname];
-//   } else if (field.fieldtype === 'Link' && linkFieldOptions.value[field.fieldname]) {
-//     options = linkFieldOptions.value[field.fieldname];
-//   } else if (field.fieldtype === 'Select' && field.options) {
-//     options = field.options.split('\n').map(option => ({
-//       value: option,
-//       label: option
-//     }));
-//   }
-
-//   // Sort and cache the results
-//   const sortedOptions = [...options].sort((a, b) => {
-//     const labelA = a.label?.toLowerCase() || '';
-//     const labelB = b.label?.toLowerCase() || '';
-//     return labelA.localeCompare(labelB);
-//   });
-
-//   sortedOptionsCache.value[cacheKey] = sortedOptions;
-//   return sortedOptions;
-// };
-
-
 const getOptionsForField = (field) => {
   if (props.fieldOptions[field.fieldname]) {
     return props.fieldOptions[field.fieldname];
@@ -820,6 +800,20 @@ const getFieldDisplayValue = (fieldname) => {
   return formData.value[fieldname] || '';
 };
 
+// Handle link field input
+const handleLinkFieldInput = (fieldname) => {
+  // Clear the form data value when user starts typing a new value
+  if (linkSearchQueries.value[fieldname] !== getFieldDisplayValue(fieldname)) {
+    formData.value[fieldname] = null;
+  }
+  
+  handleFieldChange({ 
+    fieldname, 
+    value: formData.value[fieldname], 
+    searchQuery: linkSearchQueries.value[fieldname] 
+  });
+};
+
 const getImagePreview = (fieldname) => {
   // If we have a preview URL, use that
   if (filePreviewUrls.value[fieldname]) {
@@ -866,6 +860,9 @@ const openLinkDropdown = (fieldname) => {
       const option = options.find(opt => opt.value === formData.value[fieldname]);
       if (option) {
         linkSearchQueries.value[fieldname] = option.label;
+      } else if (formData.value[fieldname]) {
+        // If we have a value but no matching option, use the value as the search query
+        linkSearchQueries.value[fieldname] = formData.value[fieldname];
       }
     }
   }
@@ -937,6 +934,41 @@ const formatErrorMessage = (message) => {
   
   // Return the original message if no specific formatting is needed
   return message;
+};
+
+// Section collapsing functions
+const toggleSection = (sectionFieldname) => {
+  collapsedSections.value[sectionFieldname] = !collapsedSections.value[sectionFieldname];
+};
+
+const isSectionCollapsed = (sectionFieldname) => {
+  return !!collapsedSections.value[sectionFieldname];
+};
+
+// Check if a field is in a collapsed section
+const isFieldInCollapsedSection = (field, index) => {
+  if (field.fieldtype === 'Section Break' || field.fieldtype === 'Column Break') {
+    return false;
+  }
+  
+  // Find the section this field belongs to
+  let currentSectionIndex = -1;
+  for (let i = index - 1; i >= 0; i--) {
+    if (visibleFields.value[i].fieldtype === 'Section Break') {
+      currentSectionIndex = i;
+      break;
+    }
+  }
+  
+  // If we found a section and it's collapsed, hide the field
+  if (currentSectionIndex >= 0) {
+    const sectionField = visibleFields.value[currentSectionIndex];
+    if (sectionField.collapsible === 1 && isSectionCollapsed(sectionField.fieldname)) {
+      return true;
+    }
+  }
+  
+  return false;
 };
 
 // File handling
@@ -1137,6 +1169,8 @@ const applyUserPermissionsToFormData = () => {
       // Also set the search query to match the selected value
       linkSearchQueries.value[field.fieldname] = permission.for_value;
       
+      // Mark field as read-only  = permission.for_value;
+      
       // Mark field as read-only
       const fieldIndex = props.fields.findIndex(f => f.fieldname === field.fieldname);
       if (fieldIndex !== -1) {
@@ -1239,13 +1273,28 @@ const handleSubmit = async () => {
   }
 };
 
-const cancelForm = () => {
+const handleCancel = () => {
   if (props.mode === 'edit' || isEditing.value) {
-    Object.assign(formData.value, originalData.value);
+    // For edit mode, restore the original data
+    Object.assign(formData.value, JSON.parse(JSON.stringify(originalData.value)));
     isEditing.value = false;
+    
+    // Navigate back to the document view
+    if (props.docname) {
+      router.push(`/${props.doctype.toLowerCase().replace(/\s+/g, '-')}/${props.docname}`);
+    } else {
+      router.push(`/${props.doctype.toLowerCase().replace(/\s+/g, '-')}`);
+    }
   } else {
-    emit('cancel');
+    // For add mode, navigate back to the list view
+    router.push(`/${props.doctype.toLowerCase().replace(/\s+/g, '-')}`);
   }
+  
+  emit('cancel', {
+    mode: props.mode,
+    doctype: props.doctype,
+    docname: props.docname
+  });
 };
 
 const confirmDelete = () => {
@@ -1284,7 +1333,10 @@ const loadDocument = async () => {
     Object.assign(formData.value, data);
     
     // Store original data for reverting changes
-    originalData.value = { ...data };
+    originalData.value = JSON.parse(JSON.stringify(data));
+    
+    // Initialize link search queries for existing values
+    initializeLinkSearchQueries();
     
     // Emit load event
     emit('load', data);
@@ -1293,6 +1345,23 @@ const loadDocument = async () => {
     errorMessage.value = formatErrorMessage(error.message) || `Error loading ${props.doctype}`;
   } finally {
     loading.value = false;
+  }
+};
+
+// Initialize link search queries for existing values
+const initializeLinkSearchQueries = () => {
+  const linkFields = visibleFields.value.filter(field => field.fieldtype === 'Link');
+  
+  for (const field of linkFields) {
+    if (formData.value[field.fieldname]) {
+      const options = getOptionsForField(field);
+      const option = options.find(opt => opt.value === formData.value[field.fieldname]);
+      if (option) {
+        linkSearchQueries.value[field.fieldname] = option.label;
+      } else {
+        linkSearchQueries.value[field.fieldname] = formData.value[field.fieldname];
+      }
+    }
   }
 };
 
@@ -1394,6 +1463,18 @@ watch(userPermissions, () => {
   }
 }, { deep: true });
 
+// Process fields to mark collapsible sections
+const processCollapsibleSections = () => {
+  visibleFields.value.forEach(field => {
+    if (field.fieldtype === 'Section Break' && field.collapsible === 1) {
+      // Initialize as expanded by default
+      if (collapsedSections.value[field.fieldname] === undefined) {
+        collapsedSections.value[field.fieldname] = false;
+      }
+    }
+  });
+};
+
 defineExpose({
   setSubmitting(value) {
     submitting.value = value;
@@ -1418,6 +1499,9 @@ onMounted(async () => {
   
   // Then fetch link field options
   await fetchLinkFieldOptions();
+  
+  // Process collapsible sections
+  processCollapsibleSections();
   
   if ((props.mode === 'edit' || props.mode === 'view') && props.docname) {
     await loadDocument();

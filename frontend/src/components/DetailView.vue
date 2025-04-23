@@ -22,49 +22,46 @@
     <!-- Detail View -->
     <div v-else class="bg-white">
       <!-- Header with Actions -->
-      <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div class="px-4 py-3 max-w-3xl mx-auto flex items-center justify-between">
-          <div class="flex items-center">
-            <button @click="$router.back()" class="mr-3 text-blue-600">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <h1 class="text-xl font-semibold text-gray-900">{{ recordTitle }}</h1>
-          </div>
-          
-          <div class="flex items-center gap-2">
-            <!-- Assignment indicator -->
-            <!-- <div v-if="assignedTo" class="flex items-center px-3 py-1 bg-blue-50 text-blue-700 text-sm rounded-full border border-blue-200">
-              <UserCircleIcon class="h-4 w-4 mr-1" />
-              <span>{{ getAssignedUserInitials(assignedTo) }}</span>
-            </div> -->
-            
-            <button
-              v-if="!isEditing && canEdit"
-              @click="startEditing"
-              class="flex items-center px-3 py-1 bg-blue-50 text-blue-600 text-sm rounded-full border border-blue-600 hover:bg-blue-50 transition-colors"
-              title="Edit"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Edit
-            </button>
-            
-            <button
-              v-if="!isEditing && canDelete"
-              @click="confirmDelete"
-              class="p-2 bg-red-50 text-red-500 rounded-full border border-red-500 hover:bg-red-50 transition-colors"
-              title="Delete"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-5 0h10" />
-              </svg>
-            </button>
-          </div>
-        </div>
+      <template v-if="!isEditing">
+  <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div class="px-4 py-3 max-w-3xl mx-auto flex items-center justify-between">
+      <div class="flex items-center">
+        <button @click="$router.back()" class="mr-3 text-blue-600 pl-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h1 class="text-xl font-semibold text-gray-900">{{ recordTitle }}</h1>
       </div>
+      
+      <div class="flex items-center gap-2">
+        <button
+          v-if="canEdit"
+          @click="startEditing"
+          class="flex items-center px-3 py-1 bg-blue-50 text-blue-600 text-sm rounded-full border border-blue-600 hover:bg-blue-50 transition-colors"
+          title="Edit"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Edit
+        </button>
+        
+        <button
+          v-if="canDelete"
+          @click="confirmDelete"
+          class="p-2 bg-red-50 text-red-500 rounded-full border border-red-500 hover:bg-red-50 transition-colors"
+          title="Delete"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-5 0h10" />
+          </svg>
+          <!-- Delete -->
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
       
 
       <!-- Mobile Tabs -->
@@ -110,17 +107,13 @@
       </div>
 
       <!-- Edit Mode -->
-      <div v-if="isEditing" class="p-4 max-w-3xl mx-auto">
-        <EditForm 
+      <div v-if="isEditing" class="p-0 max-w-3xl mx-auto">
+        <FormHandler 
           :doctype="doctype"
           :recordId="recordId"
-          :record="record"
-          :formFields="formFields"
-          :linkFieldOptions="linkFieldOptions"
-          :childTableFields="childTableFields"
-          @save="saveChanges"
-          @cancel="cancelEditing"
-          @upload-file="handleFileUpload"
+          :defaultValues="record"
+          :titleField="titleField"
+          @form-submitted="handleFormSubmitted"
         />
       </div>
 
@@ -130,13 +123,6 @@
         <div class="hidden md:block max-w-3xl mx-auto p-6">
           <div class="space-y-6">
             <!-- Assignment Information -->
-            <!-- <div v-if="assignedTo" class="bg-blue-50 p-4 rounded-lg mb-6">
-              <div class="flex items-center">
-                <UserCircleIcon class="h-5 w-5 text-blue-700 mr-2" />
-                <span class="text-blue-700 font-medium">Assigned to: {{ assignedTo }}</span>
-              </div>
-            </div> -->
-
             <div class="bg-blue-50 p-4 rounded-lg mb-6">
               <div class="flex items-center mb-3">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -369,12 +355,12 @@
                                     
                                     <template v-else-if="childField.fieldtype === 'Color'">
                                       <div class="flex items-center">
-                                        <div 
-                                          class="h-4 w-4 rounded mr-1" 
-                                          :style="{ backgroundColor: row[childField.fieldname] || '#FFFFFF' }"
-                                        ></div>
-                                        <span>{{ row[childField.fieldname] }}</span>
-                                      </div>
+                            <div
+                              class="h-4 w-4 rounded mr-1"
+                              :style="{ backgroundColor: row[childField.fieldname] || '#FFFFFF' }"
+                            ></div>
+                            <span>{{ row[childField.fieldname] }}</span>
+                          </div>
                                     </template>
                                     
                                     <template v-else-if="childField.fieldtype === 'Date' || childField.fieldtype === 'Datetime'">
@@ -485,38 +471,30 @@
         <!-- Mobile view: Active tab section -->
         <div class="md:hidden p-4">
           <!-- Assignment Information for mobile -->
-          <!-- <div v-if="assignedTo && activeTab === 0" class="bg-blue-50 p-3 rounded-lg mb-4">
-            <div class="flex items-center">
-              <UserCircleIcon class="h-5 w-5 text-blue-700 mr-2" />
-              <span class="text-blue-700 font-medium">Assigned to: {{ assignedTo }}</span>
-            </div>
-          </div> -->
-
           <div v-if="activeTab === 0" class="bg-blue-50 px-3 py-2 rounded-lg mb-4">
-  <div class="flex items-center justify-between">
-    <div class="flex items-center space-x-2">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-      <h3 class="text-sm font-medium text-gray-900 whitespace-nowrap">Assigned To</h3>
-      <AssignmentList 
-        class="flex-shrink-0"
-        :doctype="doctype" 
-        :docname="recordId" 
-        @assignment-removed="handleAssignmentRemoved" 
-        @assignment-error="handleAssignmentError"
-      />
-    </div>
-    <AssignmentDialog 
-      class="flex-shrink-0"
-      :doctype="doctype" 
-      :docname="recordId" 
-      @assignment-added="handleAssignmentAdded" 
-      @assignment-error="handleAssignmentError"
-    />
-  </div>
-</div>
-
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <h3 class="text-sm font-medium text-gray-900 whitespace-nowrap">Assigned To</h3>
+                <AssignmentList 
+                  class="flex-shrink-0"
+                  :doctype="doctype" 
+                  :docname="recordId" 
+                  @assignment-removed="handleAssignmentRemoved" 
+                  @assignment-error="handleAssignmentError"
+                />
+              </div>
+              <AssignmentDialog 
+                class="flex-shrink-0"
+                :doctype="doctype" 
+                :docname="recordId" 
+                @assignment-added="handleAssignmentAdded" 
+                @assignment-error="handleAssignmentError"
+              />
+            </div>
+          </div>
           
           <!-- Section content for active tab -->
           <div v-if="activeTab < nonEmptySections.length">
@@ -901,10 +879,9 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getDocTypePermissions, getCurrentUser } from '../utils/permissions'
 import { shouldHideViewField } from '../config/field-config'
-import EditForm from './EditForm.vue'
-import { UserCircleIcon } from '@heroicons/vue/24/outline';
-import AssignmentDialog from './AssignmentDialog.vue';
-import AssignmentList from './AssignmentList.vue';
+import FormHandler from './FormHandler.vue'
+import AssignmentDialog from './AssignmentDialog.vue'
+import AssignmentList from './AssignmentList.vue'
 
 const props = defineProps({
   doctype: {
@@ -972,8 +949,7 @@ const recordTitle = computed(() => {
     }
   }
   return `${props.doctype} ${props.recordId}`;
-});
-
+})
 
 // Check if there are any linked records
 const hasLinkedRecords = computed(() => {
@@ -1504,6 +1480,8 @@ async function uploadFile(file) {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('doctype', props.doctype)
+    formData.append('docname', props.recordI , file)
+    formData.append('doctype', props.doctype)
     formData.append('docname', props.recordId)
     formData.append('fieldname', 'file_url')
 
@@ -1950,81 +1928,33 @@ const cancelEditing = () => {
   editedRecord.value = JSON.parse(JSON.stringify(record.value))
 }
 
-const saveChanges = async (updatedRecord) => {
-  try {
-    isSaving.value = true
-    console.log('Starting save operation...')
-
-    // Prepare data for update
-    const updateData = {}
-    for (const [key, value] of Object.entries(updatedRecord)) {
-      // Only include fields that have changed
-      if (JSON.stringify(value) !== JSON.stringify(record.value[key])) {
-        updateData[key] = value
-        console.log(`Field ${key} changed from`, record.value[key], 'to', value)
-      }
-    }
-
-    // If no changes, just exit edit mode
-    if (Object.keys(updateData).length === 0) {
-      console.log('No changes detected, exiting edit mode')
-      isEditing.value = false
-      isSaving.value = false
-      return
-    }
-
-    console.log('Sending update with data:', updateData)
-
-    // Update the document
-    const updatedDocRecord = await updateDocument(
-      props.doctype,
-      props.recordId,
-      updateData
-    )
-    console.log('Update successful, received:', updatedDocRecord)
-
-    // Update the local record
-    record.value = updatedDocRecord
-
-    // Exit edit mode
-    isEditing.value = false
-
-    // Trigger onUpdate event
-    triggerEvent('onupdate')
-
-    // Emit record-updated event
-    emit('record-updated', updatedDocRecord)
-  } catch (error) {
-    console.error(`Error updating ${props.doctype}:`, error)
-
-    // If we get a permission error, update the canEdit flag and show modal
-    if (error.message && error.message.includes('Permission')) {
-      console.log('User does not have permission to edit this document')
-      canEdit.value = false
-      permissionErrorMessage.value = `Error updating ${props.doctype}: You don't have permission to edit this document`
-      showPermissionError.value = true
-    } else {
-      permissionErrorMessage.value = `Error updating ${props.doctype}: ${error.message}`
-      showPermissionError.value = true
-    }
-  } finally {
-    isSaving.value = false
-  }
+const handleFormSubmitted = (updatedRecord) => {
+  // Update the local record with the new data
+  record.value = updatedRecord
+  
+  // Exit edit mode
+  isEditing.value = false
+  
+  // Emit record-updated event
+  emit('record-updated', updatedRecord)
+  
+  // Trigger onUpdate event
+  triggerEvent('onupdate')
 }
 
-const handleFileUpload = async ({ file, fieldname, callback }) => {
-  if (!file) return
+const handleAssignmentAdded = () => {
+  // Refresh assignment information
+  fetchAssignmentInfo(props.doctype, props.recordId)
+}
 
-  try {
-    const fileData = await uploadFile(file)
-    if (callback && typeof callback === 'function') {
-      callback(fileData.file_url)
-    }
-  } catch (error) {
-    console.error('Error uploading file:', error)
-    permissionErrorMessage.value = `Error uploading file: ${error.message}`
-    showPermissionError.value = true
-  }
+const handleAssignmentRemoved = () => {
+  // Refresh assignment information
+  fetchAssignmentInfo(props.doctype, props.recordId)
+}
+
+const handleAssignmentError = (error) => {
+  permissionErrorMessage.value = error
+  showPermissionError.value = true
 }
 
 const confirmDelete = () => {

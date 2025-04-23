@@ -1,11 +1,11 @@
 <template>
-    <DocTypeView
+    <GenerateUI
       doctype="Timesheet"
-      titleField="subject"
-      :listFields="['status', 'start_date', 'total_hours', ]"
+      titleField="employee_name"
+      :listFields="['start_date', 'total_hours', ]"
     />
   </template>
   
   <script setup>
-  import DocTypeView from '@/components/DocTypeView.vue';
+  import GenerateUI from '../components/GenerateUI.vue';
   </script>
