@@ -68,6 +68,33 @@ export const HIDDEN_FIELDS = [
   "custom_qc_check",
   "custom_section_break_qrtn3",
   "custom_quality_control_notes",
+  "tna_base_document_no",
+  "tna_planner",
+  "tna_status",
+  "custom_tna_end_date",
+  "completed_by",
+  "completed_on",
+  "start",
+  "duration",
+  "is_milestone",
+  "custom_section_break_iahoa",
+  "custom_task_resource",
+  "custom_total_amount",
+
+
+  // For TimeSheet 
+  "sales_invoice",
+  "salary_slip",
+  "start_date",
+  "end_date",
+  "total_billed_hours",
+  "total_billed_amount",
+  "base_total_billable_amount",
+  "base_total_billed_amount",
+  "base_total_costing_amount",
+  "per_billed",
+  "section_break_18",
+  "note",
 
 ]
 
