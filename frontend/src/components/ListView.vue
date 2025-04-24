@@ -28,124 +28,26 @@
             </span>
           </button>
           
-          <!-- Filter Dropdown -->
-          <div 
-            v-if="showFilterPanel" 
-            class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg z-50 p-3 border filter-dropdown"
-          >
-            <div v-if="statusField" class="mb-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Status</label>
-              <select
-                v-model="statusFilter"
-                class="w-full border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All Status</option>
-                <option v-for="option in getStatusOptions()" :key="option" :value="option">
-                  {{ option }}
-                </option>
-              </select>
-            </div>
-            
-            <!-- Additional Filters -->
-            <div v-for="field in filterableFields" :key="field.fieldname" class="mb-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">{{ field.label }}</label>
-              
-              <!-- Link field filter -->
-              <select
-                v-if="field.fieldtype === 'Link'"
-                v-model="customFilters[field.fieldname]"
-                class="w-full border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All {{ field.label }}</option>
-                <option v-for="option in getLinkOptions(field)" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-              
-              <!-- Select field filter -->
-              <select
-                v-else-if="field.fieldtype === 'Select'"
-                v-model="customFilters[field.fieldname]"
-                class="w-full border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All {{ field.label }}</option>
-                <option v-for="option in getSelectOptions(field)" :key="option" :value="option">
-                  {{ option }}
-                </option>
-              </select>
-              
-              <!-- Date field filter -->
-              <div v-else-if="field.fieldtype === 'Date' || field.fieldtype === 'Datetime'" class="flex gap-2">
-                <input
-                  v-model="dateFilters[field.fieldname].from"
-                  type="date"
-                  class="w-1/2 border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="From"
-                />
-                <input
-                  v-model="dateFilters[field.fieldname].to"
-                  type="date"
-                  class="w-1/2 border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="To"
-                />
-              </div>
-              
-              <!-- Text field filter -->
-              <input
-                v-else
-                v-model="customFilters[field.fieldname]"
-                type="text"
-                class="w-full border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                :placeholder="`Filter by ${field.label}`"
-              />
-            </div>
-            
-            <!-- Assignment filter -->
-            <div class="mb-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Assignment</label>
-              <select
-                v-model="assignmentFilter"
-                class="w-full border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">All Records</option>
-                <option value="assigned_to_me">Assigned to Me</option>
-                <option value="created_by_me">Created by Me</option>
-                <option value="both">Both</option>
-              </select>
-            </div>
-            
-            <div class="mb-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Sort By</label>
-              <select
-                v-model="sortOption"
-                class="w-full border rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="creation desc">Newest First</option>
-                <option value="creation asc">Oldest First</option>
-                <option v-for="field in sortableFields" :key="field.fieldname" :value="`${field.fieldname} asc`">
-                  {{ field.label }} (A-Z)
-                </option>
-                <option v-for="field in sortableFields" :key="`${field.fieldname}-desc`" :value="`${field.fieldname} desc`">
-                  {{ field.label }} (Z-A)
-                </option>
-              </select>
-            </div>
-            
-            <div class="flex justify-between">
-              <button 
-                @click="resetFilters" 
-                class="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50"
-              >
-                Reset
-              </button>
-              <button 
-                @click="applyFilters" 
-                class="px-3 py-1.5 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors"
-              >
-                Apply
-              </button>
-            </div>
-          </div>
+          <!-- Filter Panel Component -->
+          <FilterPanel
+            v-if="showFilterPanel"
+            :status-field="statusField"
+            :filterable-fields="filterableFields"
+            :sortable-fields="sortableFields"
+            :link-field-options="linkFieldOptions"
+            :status-filter="statusFilter"
+            :custom-filters="customFilters"
+            :date-filters="dateFilters"
+            :assignment-filter="assignmentFilter"
+            :sort-option="sortOption"
+            @update:status-filter="statusFilter = $event"
+            @update:custom-filters="customFilters = $event"
+            @update:date-filters="dateFilters = $event"
+            @update:assignment-filter="assignmentFilter = $event"
+            @update:sort-option="sortOption = $event"
+            @reset="resetFilters"
+            @apply="applyFilters"
+          />
         </div>
 
         <button 
@@ -268,6 +170,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import api from '@/utils/api';
 import { getDocTypePermissions, getCurrentUser } from '../utils/permissions';
+import FilterPanel from './FilterPanel.vue';
 
 const props = defineProps({
   doctype: {

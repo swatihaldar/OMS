@@ -1,9 +1,9 @@
 <template>
   <div>
-    <!-- Assignment Button - Simple plus icon in a circle -->
+    <!-- Assignment Button -->
     <button 
       @click="openDialog" 
-      class="flex items-center justify-center p-2 bg-white text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50 transition-colors shadow-sm"
+      class="flex items-center justify-center p-3 bg-white text-blue-600 border border-blue-600 rounded-full hover:bg-blue-50 transition-colors shadow-sm"
       title="Assign to User"
     >
       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -89,27 +89,30 @@
                 class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm left-0 right-0"
                 style="max-width: 100%;"
               >
-                <div
-                  v-for="user in filteredUsers"
-                  :key="user.value"
-                  class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
-                  @mousedown="selectUser(user)"
-                >
-                  <div class="flex items-center">
-                    <!-- User image if available -->
-                    <div class="h-8 w-8 rounded-full overflow-hidden flex items-center justify-center bg-blue-600 text-white mr-2">
-                      <img 
-                        v-if="user.image" 
-                        :src="user.image" 
-                        :alt="user.label"
-                        class="h-full w-full object-cover"
-                        @error="handleImageError($event, user)"
-                      />
-                      <span v-else class="text-sm font-medium">{{ getUserInitials(user.label) }}</span>
-                    </div>
-                    <span class="block truncate">{{ user.label }}</span>
+              <div
+                v-for="user in filteredUsers"
+                :key="user.value"
+                class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
+                @mousedown="selectUser(user)"
+              >
+                <div class="flex items-center">
+                  <!-- User image if available -->
+                  <div class="h-8 w-8 rounded-full overflow-hidden flex items-center justify-center bg-blue-600 text-white mr-2">
+                    <img 
+                      v-if="user.image" 
+                      :src="user.image" 
+                      :alt="user.fullName || user.userId"
+                      class="h-full w-full object-cover"
+                      @error="handleImageError($event, user)"
+                    />
+                    <span v-else class="text-sm font-medium">{{ getUserInitials(user.fullName || user.userId) }}</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-medium">{{ user.fullName }}</span>
+                    <span class="text-xs text-gray-500">{{ user.userId }}</span>
                   </div>
                 </div>
+              </div>
                 <div
                   v-if="filteredUsers.length === 0"
                   class="py-2 px-3 text-gray-500 italic"
@@ -319,7 +322,9 @@ const generateDefaultComment = () => {
 const handleAssignToMeChange = () => {
   if (assignToMe.value && currentUser.value) {
     assignmentData.value.assign_to = currentUser.value.value;
-    userSearch.value = currentUser.value.label;
+    userSearch.value = currentUser.value.fullName ? 
+      `${currentUser.value.fullName} (${currentUser.value.userId})` : 
+      currentUser.value.userId;
   } else {
     assignmentData.value.assign_to = '';
     userSearch.value = '';
@@ -335,7 +340,7 @@ const handleUserBlur = () => {
 
 const selectUser = (user) => {
   assignmentData.value.assign_to = user.value;
-  userSearch.value = user.label;
+  userSearch.value = user.fullName ? `${user.fullName} (${user.userId})` : user.userId;
   showUserDropdown.value = false;
 };
 
@@ -393,13 +398,16 @@ const fetchCurrentUser = async () => {
       const userData = await userResponse.json();
       
       if (userData.message) {
-        const user = userData.message;
-        currentUser.value = {
-          value: user.name,
-          label: user.full_name || user.name,
-          image: user.user_image ? getFullImageUrl(user.user_image) : null
-        };
-      }
+      const user = userData.message;
+      currentUser.value = {
+        value: user.name,
+        label: user.full_name ? `${user.full_name} (${user.name})` : user.name,
+        fullName: user.full_name || '',
+        userId: user.name,
+        image: user.user_image ? getFullImageUrl(user.user_image) : null
+      };
+    }
+
     }
   } catch (error) {
     console.error('Error fetching current user:', error);
@@ -422,7 +430,7 @@ const fetchAssignableUsers = async () => {
       const data = await response.json();
       
       if (data.message && Array.isArray(data.message)) {
-        // Format the users with their images
+        // Format the users with their images and include both name and ID
         const userPromises = data.message.map(async (username) => {
           try {
             const userResponse = await fetch('/api/method/frappe.client.get', {
@@ -441,7 +449,9 @@ const fetchAssignableUsers = async () => {
               const user = userData.message;
               return {
                 value: user.name,
-                label: user.full_name || user.name,
+                label: user.full_name ? `${user.full_name} (${user.name})` : user.name,
+                fullName: user.full_name || '',
+                userId: user.name,
                 image: user.user_image ? getFullImageUrl(user.user_image) : null
               };
             }
@@ -449,6 +459,8 @@ const fetchAssignableUsers = async () => {
             return {
               value: username,
               label: username,
+              fullName: '',
+              userId: username,
               image: null
             };
           } catch (error) {
@@ -456,6 +468,8 @@ const fetchAssignableUsers = async () => {
             return {
               value: username,
               label: username,
+              fullName: '',
+              userId: username,
               image: null
             };
           }
@@ -486,16 +500,21 @@ const fetchAssignableUsers = async () => {
     const data = await response.json();
     
     if (data.message) {
-      users.value = data.message.map(user => ({
+      assignableUsers.value = data.message.map(user => ({
         value: user.name,
-        label: user.full_name || user.name,
+        label: user.full_name ? `${user.full_name} (${user.name})` : user.name,
+        fullName: user.full_name || '',
+        userId: user.name,
         image: user.user_image ? getFullImageUrl(user.user_image) : null
       }));
       
-      assignableUsers.value = users.value;
+      users.value = assignableUsers.value;
     }
   } catch (error) {
     console.error('Error fetching users:', error);
+    // Return empty array if there's an error
+    assignableUsers.value = [];
+    users.value = [];
   }
 };
 

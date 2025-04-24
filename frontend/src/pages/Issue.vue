@@ -2,7 +2,8 @@
   <GenerateUI
     doctype="Issue"
     titleField="subject"
-    :listFields="['status', 'project', 'creation','custom_client_status','allocated_to']"
+    :listFields="['status', 'project', 'creation', 'custom_client_status', 'allocated_to','raised_by']"
+    :showOnlyOwnRecords="true"
   />
 </template>
 

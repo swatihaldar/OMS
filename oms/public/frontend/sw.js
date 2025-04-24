@@ -1,14 +1,12 @@
-// Service Worker for PWA
 const CACHE_NAME = "frappe-oms-v1"
 const urlsToCache = [
   "/oms/",
   "/oms/index.html",
-  "/assets/oms/frontend/manifest.json",
-  "/assets/oms/frontend/icon.png",
-  
+  "/oms/manifest.json",
+  "/oms/icons/icon-192x192.png",
+  "/oms/icons/icon-512x512.png",
 ]
 
-// Install event - cache assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -17,20 +15,23 @@ self.addEventListener("install", (event) => {
   )
 })
 
-// Fetch event - serve from cache if available
 self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((response) => {
+
       if (response) {
         return response
       }
 
+
       const fetchRequest = event.request.clone()
 
       return fetch(fetchRequest).then((response) => {
+
         if (!response || response.status !== 200 || response.type !== "basic") {
           return response
         }
+
         const responseToCache = response.clone()
 
         caches.open(CACHE_NAME).then((cache) => {

@@ -1,0 +1,1 @@
+import{_ as t}from"./GenerateUI-DBf47VpG.js";import{c as e,o as s}from"./index-BWT8cemi.js";const i={__name:"Issue",setup(c){return(o,a)=>(s(),e(t,{doctype:"Issue",titleField:"subject",listFields:["status","project","creation","custom_client_status","allocated_to"]}))}};export{i as default};

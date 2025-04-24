@@ -159,6 +159,7 @@ async function fetchDoctypeFields(doctype) {
       })
 
       const data = await response.json()
+      // debugger;
 
       if (data.message && Array.isArray(data.message) && data.message.length > 0) {
         apiCache.doctypeFields[doctype] = data.message
@@ -183,6 +184,7 @@ async function fetchDoctypeFields(doctype) {
     })
 
     const data = await response.json()
+    // debugger;
 
     if (data.message && data.message.docs && data.message.docs[0]) {
       // Get the doctype definition
@@ -201,6 +203,7 @@ async function fetchDoctypeFields(doctype) {
     throw error
   }
 }
+
 
 
 // async function fetchDoctypeFields(doctype) {

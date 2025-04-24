@@ -3,6 +3,7 @@
       doctype="Task"
       titleField="subject"
       :listFields="['status', 'project', 'priority', 'creation','allocated_to']"
+      :showOnlyOwnRecords="true"
     />
   </template>
   

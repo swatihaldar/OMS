@@ -85,6 +85,7 @@ export async function getDocTypePermissions(doctype) {
 
       if (response.ok) {
         const data = await response.json();
+        // debugger;
         
         if (data.message && data.message._permissions) {
           const permissions = data.message._permissions;

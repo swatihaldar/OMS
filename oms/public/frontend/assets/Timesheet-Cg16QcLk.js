@@ -1,0 +1,1 @@
+import{_ as e}from"./GenerateUI-DBf47VpG.js";import{c as t,o}from"./index-BWT8cemi.js";const m={__name:"Timesheet",setup(s){return(a,_)=>(o(),t(e,{doctype:"Timesheet",titleField:"employee_name",listFields:["start_date","total_hours"]}))}};export{m as default};
