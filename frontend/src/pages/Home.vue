@@ -21,7 +21,7 @@
         </div>
         
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-          <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
+          <!-- <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
             <div class="text-xs md:text-sm text-white mb-1 font-medium">My Open Issues</div>
             <div class="text-xl md:text-2xl font-bold text-white">{{ stats.openIssues }}</div>
             <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:opacity-30 transition-opacity">
@@ -29,8 +29,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-          </div>
-          <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
+          </div> -->
+          <!-- <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
             <div class="text-xs md:text-sm text-white mb-1 font-medium">Completed Tasks</div>
             <div class="text-xl md:text-2xl font-bold text-white">{{ stats.completedTasks }}</div>
             <div class="absolute -right-4 -bottom-4 opacity-20 group-hover:opacity-30 transition-opacity">
@@ -38,7 +38,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-          </div>
+          </div> -->
           <!-- <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4 relative overflow-hidden group hover:bg-opacity-30 transition-all duration-300 transform hover:scale-105">
             <div class="text-xs md:text-sm text-white mb-1 font-medium">Active Projects</div>
             <div class="text-xl md:text-2xl font-bold text-white">{{ stats.activeProjects || 3 }}</div>
@@ -104,16 +104,19 @@
               <span class="text-sm font-medium text-gray-700">Log Time</span>
             </button>
             <button 
-              @click="$router.push('/project')"
+              @click="$router.push('/profile')"
               class="flex flex-col items-center justify-center p-4 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors duration-200 group"
             >
               <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mb-2 group-hover:bg-amber-200 transition-colors duration-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                <!-- User Profile SVG Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M5.121 17.804A9 9 0 0112 15c2.21 0 4.209.805 5.879 2.137M15 11a3 3 0 11-6 0 3 3 0 016 0zM12 3a9 9 0 100 18 9 9 0 000-18z" />
                 </svg>
               </div>
-              <span class="text-sm font-medium text-gray-700">Projects</span>
+              <span class="text-sm font-medium text-gray-700">Profile</span>
             </button>
+
           </div>
         </div>
         

@@ -7,83 +7,6 @@
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
 
-      <!-- View Mode -->
-      <div v-else-if="mode === 'view' && !isEditing" class="space-y-6">
-        <!-- Document Fields -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-          <template v-for="(field, index) in visibleFields" :key="field.fieldname">
-
-            <!-- Section Break -->
-            <div v-if="field.fieldtype === 'Section Break'" class="col-span-1 md:col-span-2 border-t border-gray-200 pt-6 mt-6">
-              <h3 v-if="field.label" class="text-lg font-medium text-gray-900 mb-4">{{ field.label }}</h3>
-            </div>
-
-            <!-- Column Break -->
-            <div v-else-if="field.fieldtype === 'Column Break'" class="hidden md:block">
-              <!-- Column break marker -->
-            </div>
-
-            <!-- Regular fields -->
-            <div v-else class="field-container" :class="getColumnClass(index)">
-              <div class="mb-4">
-                <div class="text-sm font-medium text-gray-500 mb-1">{{ field.label }}</div>
-                
-                <!-- Link fields -->
-                <div v-if="field.fieldtype === 'Link'" class="text-gray-900">
-                  {{ getFieldDisplayValue(field.fieldname) }}
-                </div>
-                
-                <!-- Select fields -->
-                <div v-else-if="field.fieldtype === 'Select'" class="text-gray-900">
-                  {{ formData[field.fieldname] }}
-                </div>
-                
-                <!-- Text Editor fields -->
-                <div v-else-if="field.fieldtype === 'Text Editor'" class="prose max-w-none">
-                  <div v-html="formData[field.fieldname]"></div>
-                </div>
-                
-                <!-- Long Text fields -->
-                <div v-else-if="field.fieldtype === 'Long Text'" class="text-gray-900 whitespace-pre-line">
-                  {{ formData[field.fieldname] }}
-                </div>
-                
-                <!-- Small Text fields with line breaks -->
-                <div v-else-if="field.fieldtype === 'Small Text'" class="text-gray-900 whitespace-pre-line">
-                  {{ formData[field.fieldname] }}
-                </div>
-                
-                <!-- Checkbox fields -->
-                <div v-else-if="field.fieldtype === 'Check'" class="text-gray-900">
-                  <span v-if="formData[field.fieldname]" class="text-green-600">Yes</span>
-                  <span v-else class="text-red-600">No</span>
-                </div>
-                
-                <!-- Image fields -->
-                <div v-else-if="field.fieldtype === 'Attach Image' && formData[field.fieldname]" class="mt-1">
-                  <img :src="formData[field.fieldname]" alt="Attached Image" class="h-48 w-auto rounded-lg object-cover" />
-                </div>
-                
-                <!-- Attachment fields -->
-                <div v-else-if="field.fieldtype === 'Attach' && formData[field.fieldname]" class="mt-1 flex items-center">
-                  <a :href="formData[field.fieldname]" target="_blank" class="text-blue-600 hover:underline flex items-center">
-                    <svg class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    Download Attachment
-                  </a>
-                </div>
-                
-                <!-- Default field display -->
-                <div v-else class="text-gray-900">
-                  {{ formData[field.fieldname] }}
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-
       <!-- Form (Add/Edit Mode) -->
       <form v-else @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Error Message -->
@@ -131,8 +54,23 @@
             <!-- Regular fields - Only show if not in a collapsed section -->
             <div v-else-if="!isFieldInCollapsedSection(field, index)" class="field-container" :class="getColumnClass(index)">
 
+              <!-- Table fields -->
+              <div v-if="field.fieldtype === 'Table'">
+                <ChildTableComponent
+                  v-model="formData[field.fieldname]"
+                  :fieldname="field.fieldname"
+                  :label="field.label"
+                  :description="field.description"
+                  :required="field.reqd"
+                  :is-read-only="field.read_only || isReadOnly"
+                  :child-doctype="field.options"
+                  :parent-doctype="doctype"
+                  @change="(value) => handleFieldChange({ fieldname: field.fieldname, value })"
+                />
+              </div>
+
               <!-- Link fields with search -->
-              <div v-if="field.fieldtype === 'Link'" class="relative">
+              <div v-else-if="field.fieldtype === 'Link'" class="relative">
                 <label 
                   class="block text-sm font-medium text-gray-700 mb-1 group relative"
                 >
@@ -169,7 +107,7 @@
                   </div>
                 </div>
                 
-                <!-- Dropdown for link options -->
+                <!-- Dropdown for link options --> 
                 <div 
                   v-if="activeLinkDropdown === field.fieldname"
                   class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm"
@@ -180,9 +118,25 @@
                     class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100"
                     @mousedown="selectLinkOption(field.fieldname, option.value)"
                   >
-                    <span class="block truncate" :class="{'font-semibold': formData[field.fieldname] === option.value}">
-                      {{ option.label }}
-                    </span>
+                    <div class="flex flex-col">
+                      <span class="block truncate font-medium">
+                        {{ option.label }}
+                      </span>
+                      <div v-if="option.description || option.status" class="flex flex-wrap gap-1 mt-1">
+                        <span 
+                          v-if="option.description" 
+                          class="text-xs text-gray-500"
+                        >
+                          {{ option.description }}
+                        </span>
+                        <span 
+                          v-if="option.status" 
+                          class="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-800"
+                        >
+                          {{ option.status }}
+                        </span>
+                      </div>
+                    </div>
                     <span 
                       v-if="formData[field.fieldname] === option.value" 
                       class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600"
@@ -312,7 +266,7 @@
                   class="border rounded-lg overflow-hidden"
                   :class="{'border-red-500': isFieldInvalid(field.fieldname) && field.reqd}"
                 >
-                  <!-- <QuillEditor
+                  <QuillEditor
                     v-model:content="formData[field.fieldname]"
                     toolbar="full"
                     theme="snow"
@@ -320,7 +274,7 @@
                     :readOnly="field.read_only || isReadOnly"
                     class="min-h-[200px] max-h-[400px]"
                     @update:content="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
-                  /> -->
+                  />
                 </div>
               </div>
 
@@ -529,21 +483,6 @@
                   </button>
                 </div>
               </div>
-
-              <!-- Table fields -->
-              <div v-else-if="field.fieldtype === 'Table'">
-                <TableFieldComponent
-                  v-model="formData[field.fieldname]"
-                  :fieldname="field.fieldname"
-                  :label="field.label"
-                  :description="field.description"
-                  :required="field.reqd"
-                  :is-read-only="field.read_only || isReadOnly"
-                  :child-doctype="field.options"
-                  :parent-doctype="doctype"
-                  @change="(value) => handleFieldChange({ fieldname: field.fieldname, value })"
-                />
-              </div>
             </div>
           </template>
         </div>
@@ -583,19 +522,12 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
-import { QuillEditor } from '@vueup/vue-quill';
-import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import api from '@/utils/api';
 import { getHiddenFields } from '@/config/form-config';
-import TableFieldComponent from './TableFieldComponent.vue';
 import { useRouter } from 'vue-router';
-
-
-// Add this right after the script setup line
-const components = {
-  QuillEditor,
-  TableFieldComponent
-};
+import { QuillEditor } from '@vueup/vue-quill';
+import '@vueup/vue-quill/dist/vue-quill.snow.css';
+import ChildTableComponent from './ChildTableComponent.vue';
 
 const props = defineProps({
   modelValue: {
@@ -687,13 +619,14 @@ const docTitle = computed(() => {
 
 const visibleFields = computed(() => {
   // Get the list of hidden fields from the config
-  const hiddenFieldsList = getHiddenFields();
+  const hiddenFieldsList = getHiddenFields(props.doctype);
   
   return props.fields
     .filter(field => 
       field && 
       field.fieldname && 
       !field.hidden &&
+      field.hidden !== 1 && // Handle both boolean and numeric values
       !hiddenFieldsList.includes(field.fieldname) // Filter out fields in the hidden fields list
     )
     .sort((a, b) => (a.idx || 0) - (b.idx || 0));
@@ -716,6 +649,7 @@ const getInputType = (field) => {
     case 'Phone':
       return 'tel';
     case 'Int':
+      return 'number';
     case 'Float':
     case 'Currency':
     case 'Percent':
@@ -743,8 +677,8 @@ const getColumnClass = (index) => {
     return 'col-span-1';
   }
 
-  // For Long Text and Text Editor fields, use full width
-  if (field.fieldtype === 'Long Text' || field.fieldtype === 'Text Editor') {
+  // For Long Text, Text Editor, and Table fields, use full width
+  if (field.fieldtype === 'Long Text' || field.fieldtype === 'Text Editor' || field.fieldtype === 'Table') {
     return 'col-span-1 md:col-span-2';
   }
 
@@ -862,7 +796,7 @@ const openLinkDropdown = (fieldname) => {
         linkSearchQueries.value[fieldname] = option.label;
       } else if (formData.value[fieldname]) {
         // If we have a value but no matching option, use the value as the search query
-        linkSearchQueries.value[fieldname] = formData.value[fieldname];
+        linkSearchQueries.value[fieldname] = formData.value[field.fieldname];
       }
     }
   }
@@ -1169,8 +1103,6 @@ const applyUserPermissionsToFormData = () => {
       // Also set the search query to match the selected value
       linkSearchQueries.value[field.fieldname] = permission.for_value;
       
-      // Mark field as read-only  = permission.for_value;
-      
       // Mark field as read-only
       const fieldIndex = props.fields.findIndex(f => f.fieldname === field.fieldname);
       if (fieldIndex !== -1) {
@@ -1259,7 +1191,7 @@ const handleSubmit = async () => {
       // Submit the form data
       emit('submit', { 
         formData: formData.value, 
-        files: {}, // Don't send files directly
+        files: fileAttachments.value,
         isNew,
         doctype: props.doctype,
         docname: props.docname,
@@ -1371,48 +1303,135 @@ const fetchLinkFieldOptions = async () => {
   
   for (const field of linkFields) {
     try {
-      console.log(`Auto-fetching options for ${field.fieldname} (${field.options})`);
+      if (!field.options) continue;
       
-      let options = [];
+      // 1. First get the meta of the linked doctype to find the title field
+      const metaResponse = await fetch("/api/method/frappe.client.get", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctype: "DocType",
+          name: field.options,
+          fields: ["title_field"]
+        }),
+        credentials: "include",
+      });
       
-      // Special handling for common doctypes
-      if (field.options === 'Project') {
-        const projects = await api.fetchLinkOptions('Project', ['name', 'project_name', 'creation']);
-        options = projects.map(item => ({
-          value: item.name,
-          label: item.project_name || item.name,
-          creation: item.creation
-        }));
-      } else if (field.options === 'Contact') {
-        const contacts = await api.fetchLinkOptions('Contact', ['name', 'first_name', 'last_name', 'creation']);
-        options = contacts.map(item => ({
-          value: item.name,
-          label: `${item.first_name || ''} ${item.last_name || ''} (${item.name})`,
-          creation: item.creation
-        }));
-      } else {
-        // Fetch all records with limit 0
-        const items = await api.fetchLinkOptions(field.options, ['name', 'creation']);
-        options = items.map(item => ({
-          value: item.name,
-          label: item.name,
-          creation: item.creation
-        }));
+      const metaData = await metaResponse.json();
+      const titleField = metaData.message?.title_field || "name";
+      
+      // 2. Get all fields from the doctype to check for common name fields
+      const fieldsResponse = await fetch("/api/method/frappe.client.get_list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctype: "DocField",
+          fields: ["fieldname", "fieldtype"],
+          filters: { parent: field.options },
+          limit_page_length: 0
+        }),
+        credentials: "include",
+      });
+      
+      const fieldsData = await fieldsResponse.json();
+      const fieldNames = fieldsData.message || [];
+      
+      // 3. Determine additional fields to fetch based on common patterns
+      const fieldsToFetch = new Set(["name", titleField, "creation"]);
+      
+      // Add common name fields if they exist
+      const commonNameFields = [
+        "first_name", "last_name", "full_name",
+        "project_name", "subject", "title",
+        "customer_name", "employee_name"
+      ];
+      
+      commonNameFields.forEach(fieldName => {
+        if (fieldNames.some(f => f.fieldname === fieldName)) {
+          fieldsToFetch.add(fieldName);
+        }
+      });
+      
+      // Add status field if it exists
+      if (fieldNames.some(f => f.fieldname === "status")) {
+        fieldsToFetch.add("status");
       }
       
-      // Sort by creation date (newest first) if available
-      if (options.length > 0 && options[0].creation) {
-        options.sort((a, b) => {
-          if (!a.creation) return 1;
-          if (!b.creation) return -1;
-          return new Date(b.creation) - new Date(a.creation);
+      // 4. Fetch the actual data
+      const response = await fetch("/api/method/frappe.client.get_list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctype: field.options,
+          fields: Array.from(fieldsToFetch),
+          limit_page_length: 0, // Get all records
+          order_by: "creation desc" // Newest first
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) throw new Error(`Failed to fetch options for ${field.fieldname}`);
+
+      const data = await response.json();
+
+      if (data.message) {
+        linkFieldOptions.value[field.fieldname] = data.message.map(item => {
+          // Determine the best label based on available fields
+          let label = item[titleField] || item.name;
+          
+          // Try to build a better label if title field is just the name
+          if (label === item.name) {
+            if (item.first_name && item.last_name) {
+              label = `${item.first_name} ${item.last_name}`.trim();
+            } 
+            else if (item.full_name) {
+              label = item.full_name;
+            }
+            else if (item.project_name) {
+              label = item.project_name;
+            }
+            else if (item.subject) {
+              label = item.subject;
+            }
+            else if (item.title) {
+              label = item.title;
+            }
+            else if (item.customer_name) {
+              label = item.customer_name;
+            }
+            else if (item.employee_name) {
+              label = item.employee_name;
+            }
+          }
+          
+          return {
+            value: item.name,
+            label: label || item.name,
+            description: item.name !== label ? `${item.name}` : undefined,
+            creation: item.creation,
+            ...(item.status && { status: item.status })
+          };
         });
       }
-      
-      linkFieldOptions.value[field.fieldname] = options;
-      
     } catch (error) {
       console.error(`Error fetching options for ${field.fieldname}:`, error);
+      // Fallback to just name if anything fails
+      const fallbackResponse = await fetch("/api/method/frappe.client.get_list", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctype: field.options,
+          fields: ["name"],
+          limit_page_length: 500,
+        }),
+        credentials: "include",
+      });
+      
+      const fallbackData = await fallbackResponse.json();
+      linkFieldOptions.value[field.fieldname] = fallbackData.message?.map(item => ({
+        value: item.name,
+        label: item.name
+      })) || [];
     }
   }
 };
@@ -1467,9 +1486,9 @@ watch(userPermissions, () => {
 const processCollapsibleSections = () => {
   visibleFields.value.forEach(field => {
     if (field.fieldtype === 'Section Break' && field.collapsible === 1) {
-      // Initialize as expanded by default
+      // Initialize as COLLAPSED by default (changed from false to true)
       if (collapsedSections.value[field.fieldname] === undefined) {
-        collapsedSections.value[field.fieldname] = false;
+        collapsedSections.value[field.fieldname] = true;
       }
     }
   });
@@ -1488,7 +1507,8 @@ defineExpose({
   uploadFilesToTemp,
   attachFilesToDoc,
   loadDocument,
-  deleteDocument
+  deleteDocument,
+  handleSubmit
 });
 
 onMounted(async () => {

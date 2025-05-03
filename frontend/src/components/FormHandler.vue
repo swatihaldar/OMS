@@ -44,8 +44,62 @@
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
     </div>
 
+    <!-- Quick Entry Dialog -->
+    <div v-if="showQuickEntryDialog" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="p-4 border-b flex justify-between items-center">
+          <h3 class="text-lg font-medium">Quick Add {{ doctype }}</h3>
+          <button @click="closeQuickEntryDialog" class="text-gray-500 hover:text-gray-700">
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-4">
+          <!-- Use the same FetchFieldProp component for quick entry, but with filtered fields -->
+          <FetchFieldProp
+            ref="quickEntryFormRef"
+            v-model="quickEntryData"
+            :fields="quickEntryFields"
+            :field-options="fieldOptions"
+            @validate="validateQuickEntryForm"
+            @submit="submitForm"
+            :submit-text="'Save'"
+            :doctype="doctype"
+            :mode="'add'"
+          >
+            <template #actions>
+              <div class="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  @click="openFullForm"
+                  class="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Full Form
+                </button>
+                <button
+                  @click="submitQuickEntryForm"
+                  :disabled="submitting"
+                  class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:bg-blue-800"
+                >
+                  <span v-if="submitting" class="flex items-center justify-center">
+                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </span>
+                  <span v-else>Save</span>
+                </button>
+              </div>
+            </template>
+          </FetchFieldProp>
+        </div>
+      </div>
+    </div>
+
     <!-- Form -->
-    <div v-else class="form-container">
+    <div v-else-if="!loading" class="form-container">
       <FetchFieldProp
         ref="formViewRef"
         v-model="formData"
@@ -70,9 +124,9 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-// import FormView from '@/components/FormView.vue';
 import FetchFieldProp from './FetchFieldProp.vue';
 import api from '@/utils/api';
+import { getHiddenFields } from '@/config/form-config';
 
 const props = defineProps({
   doctype: {
@@ -110,6 +164,13 @@ const clientScripts = ref([]);
 const eventHandlers = ref({});
 const userPermissions = ref([]);
 
+// Quick Entry related refs
+const showQuickEntryDialog = ref(false);
+const quickEntryFields = ref([]);
+const quickEntryData = ref({});
+const quickEntryFormRef = ref(null);
+const doctypeMeta = ref(null);
+
 const doctypeRoute = computed(() => {
   return props.doctype.toLowerCase().replace(/\s+/g, '-');
 });
@@ -118,30 +179,65 @@ const isEditMode = computed(() => {
   return !!props.recordId && props.recordId !== 'new';
 });
 
+// Check if the doctype has quick entry enabled
+const hasQuickEntry = computed(() => {
+  if (!doctypeMeta.value) return false;
+  
+  // Check if doctype has quick_entry enabled
+  if (doctypeMeta.value.quick_entry === 1) return true;
+  
+  // Check if any fields are explicitly marked for quick entry
+  return formFields.value.some(field => {
+    return field.allow_in_quick_entry === 1 || 
+           field.allow_in_quick_entry === true || 
+           field.allow_in_quick_entry === '1';
+  });
+});
+
 // Methods
 const fetchDoctypeFields = async () => {
   try {
     console.log(`Fetching doctype fields for ${props.doctype}...`);
     
+    // Use the improved API function that combines multiple sources
     const result = await api.fetchDoctypeFields(props.doctype);
     
-    if (Array.isArray(result)) {
-      formFields.value = result;
-    } else if (result && result.fields) {
-      formFields.value = result.fields;
+    if (result && result.fields) {
+      // Store the doctype metadata
+      doctypeMeta.value = result.meta || {};
       
-      if (result.clientScripts) {
-        clientScripts.value = result.clientScripts;
-      } else {
-        await fetchClientScripts();
+      // Store all fields
+      formFields.value = result.fields;
+      console.log(`Successfully fetched ${result.fields.length} fields for ${props.doctype}`);
+      
+      // Debug log to check field properties
+      const sampleField = result.fields.find(f => f.fieldtype === 'Section Break' && (f.collapsible === 1 || f.collapsible === true || f.collapsible === '1'));
+      if (sampleField) {
+        console.log('Sample collapsible section:', sampleField);
+      }
+      
+      const quickEntryField = result.fields.find(f => f.allow_in_quick_entry === 1 || f.allow_in_quick_entry === true || f.allow_in_quick_entry === '1');
+      if (quickEntryField) {
+        console.log('Sample quick entry field:', quickEntryField);
+      }
+      
+      const fieldWithDesc = result.fields.find(f => f.description && f.description.trim() !== '');
+      if (fieldWithDesc) {
+        console.log('Sample field with description:', fieldWithDesc);
       }
     } else {
-      throw new Error('Invalid response format');
+      throw new Error('Invalid fields data in response');
     }
     
     processFields();
+    prepareQuickEntryFields();
     await fetchUserPermissions();
     await applyUserPermissionsToFormData();
+    
+    // Show quick entry dialog if not in edit mode and quick entry is enabled
+    if (!isEditMode.value && hasQuickEntry.value) {
+      showQuickEntryDialog.value = true;
+    }
     
   } catch (error) {
     console.error('Error fetching doctype fields:', error);
@@ -154,15 +250,117 @@ const fetchDoctypeFields = async () => {
 
 const processFields = () => {
   const systemFields = ['name', 'owner', 'creation', 'modified', 'modified_by', 'docstatus', 'idx'];
+  const hiddenFieldsList = getHiddenFields(props.doctype);
   
   processedFields.value = formFields.value
     .filter(field => {
       if (!field || !field.fieldname) return false;
       if (systemFields.includes(field.fieldname)) return false;
-      if (field.hidden) return false;
+      if (field.hidden === 1 || field.hidden === true || field.hidden === '1') return false;
+      if (hiddenFieldsList.includes(field.fieldname)) return false;
       return true;
     })
     .sort((a, b) => (a.idx || 0) - (b.idx || 0));
+    
+  // Ensure all fields have the required properties
+  processedFields.value = processedFields.value.map(field => {
+    return {
+      fieldname: field.fieldname || '',
+      fieldtype: field.fieldtype || 'Data',
+      label: field.label || field.fieldname || '',
+      reqd: field.reqd || 0,
+      hidden: field.hidden || 0,
+      read_only: field.read_only || 0,
+      options: field.options || '',
+      default: field.default || '',
+      description: field.description || '',
+      idx: field.idx || 0,
+      allow_in_quick_entry: field.allow_in_quick_entry || 0,
+      collapsible: field.collapsible || 0,
+      ...field // Keep any other properties
+    };
+  });
+};
+
+// Prepare fields for quick entry dialog
+const prepareQuickEntryFields = () => {
+  if (!formFields.value || formFields.value.length === 0) return;
+
+  // Get fields that are marked for quick entry
+  quickEntryFields.value = formFields.value
+    .filter(field => {
+      // Include if explicitly marked for quick entry
+      const isQuickEntry = field.allow_in_quick_entry === 1 || 
+                         field.allow_in_quick_entry === true || 
+                         field.allow_in_quick_entry === '1';
+      
+      // Exclude layout fields
+      const isLayoutField = ['Section Break', 'Column Break', 'HTML', 'Button'].includes(field.fieldtype);
+      
+      return isQuickEntry && !isLayoutField;
+    })
+    .sort((a, b) => (a.idx || 0) - (b.idx || 0));
+
+  // If no fields are marked for quick entry, check if doctype has quick_entry enabled
+  if (quickEntryFields.value.length === 0 && doctypeMeta.value?.quick_entry === 1) {
+    // First include mandatory fields
+    const mandatoryFields = formFields.value.filter(field => {
+      const isMandatory = field.reqd === 1 || field.reqd === true || field.reqd === '1';
+      const isLayoutField = ['Section Break', 'Column Break', 'HTML', 'Button'].includes(field.fieldtype);
+      const isLargeField = ['Long Text', 'Text Editor', 'Table'].includes(field.fieldtype);
+      
+      return isMandatory && !isLayoutField && !isLargeField && !field.hidden;
+    });
+    
+    quickEntryFields.value = mandatoryFields;
+    
+    // If we still don't have enough fields, add some common field types
+    if (quickEntryFields.value.length < 3) {
+      const commonFields = formFields.value.filter(field => {
+        const isCommonField = ['Data', 'Link', 'Select', 'Date', 'Check'].includes(field.fieldtype);
+        const isExcludedType = ['Long Text', 'Text Editor', 'Table', 'Section Break', 'Column Break', 'HTML', 'Button'].includes(field.fieldtype);
+        
+        return isCommonField && !isExcludedType && !field.hidden && 
+               !quickEntryFields.value.some(qf => qf.fieldname === field.fieldname);
+      }).slice(0, 5 - quickEntryFields.value.length);
+      
+      quickEntryFields.value = [...quickEntryFields.value, ...commonFields];
+    }
+  }
+
+  // Initialize quick entry data
+  quickEntryData.value = {};
+  quickEntryFields.value.forEach(field => {
+    quickEntryData.value[field.fieldname] = field.default || '';
+  });
+
+  console.log('Quick entry fields:', quickEntryFields.value);
+};
+
+// Submit quick entry form
+const submitQuickEntryForm = async () => {
+  if (quickEntryFormRef.value) {
+    quickEntryFormRef.value.handleSubmit();
+  }
+};
+
+// Validate quick entry form
+const validateQuickEntryForm = () => {
+  // Validation is handled by the FetchFieldProp component
+};
+
+// Open full form
+const openFullForm = () => {
+  // Merge quick entry data with form data
+  Object.assign(formData.value, quickEntryData.value);
+  
+  // Close the dialog
+  closeQuickEntryDialog();
+};
+
+// Close quick entry dialog
+const closeQuickEntryDialog = () => {
+  showQuickEntryDialog.value = false;
 };
 
 const fetchClientScripts = async () => {
@@ -440,42 +638,22 @@ const validateForm = () => {
   console.log('Validating form...');
 };
 
-// New method to directly submit the form
-const submitFormDirectly = () => {
-  if (formViewRef.value) {
-    formViewRef.value.handleSubmit();
-  }
-};
-
-const submitForm = async ({ formData: submittedData, files }) => {
+const submitForm = async ({ formData: submittedData, files, tempFileUrls, attachFilesToDoc }) => {
   try {
     triggerEvent('before_save');
     
     submitting.value = true;
     console.log(`Submitting ${props.doctype} with data:`, submittedData);
-    console.log('Files to upload:', files);
     
     const submissionData = { ...submittedData, doctype: props.doctype };
     
-    // Upload files
-    for (const [fieldname, file] of Object.entries(files)) {
-      try {
-        console.log(`Uploading file for ${fieldname}:`, file.name);
-        const fileUrl = await api.uploadFile(file, props.doctype, fieldname, props.recordId);
-        submissionData[fieldname] = fileUrl;
-        console.log(`File uploaded successfully, URL:`, fileUrl);
-      } catch (error) {
-        console.error(`Error uploading file for ${fieldname}:`, error);
-        if (formViewRef.value) {
-          formViewRef.value.setErrorMessage(`Error uploading ${file.name}: ${error.message}`);
-        }
-        submitting.value = false;
-        return;
-      }
-    }
-    
     // Save the document
     const savedDoc = await api.saveDocument(submissionData, !isEditMode.value);
+    
+    // If we have files to attach, do that now
+    if (attachFilesToDoc && typeof attachFilesToDoc === 'function') {
+      await attachFilesToDoc(savedDoc.name);
+    }
     
     triggerEvent('after_save');
     
@@ -552,30 +730,53 @@ onMounted(async () => {
   }
 });
 
-watch([() => props.doctype, () => props.recordId], async () => {
-  loading.value = true;
-  
-  try {
-    if (props.doctype !== formData.value?.doctype) {
+watch(
+  () => props.doctype,
+  async (newDoctype) => {
+    loading.value = true;
+
+    try {
       formFields.value = [];
       processedFields.value = [];
       fieldOptions.value = {};
       await fetchDoctypeFields();
+
+      if (!isEditMode.value) {
+        initializeFormData();
+      } else {
+        await fetchRecord();
+      }
+    } catch (error) {
+      console.error('Error when doctype prop changed:', error);
+      alertMessage.value = 'Error loading data';
+      alertType.value = 'error';
+    } finally {
+      loading.value = false;
     }
-    
-    if (isEditMode.value) {
-      await fetchRecord();
-    } else {
+  },
+  { immediate: false }
+);
+
+watch(
+  () => props.recordId,
+  async (newRecordId) => {
+    if (newRecordId === 'new') {
       initializeFormData();
+    } else if (newRecordId) {
+      loading.value = true;
+      try {
+        await fetchRecord();
+      } catch (error) {
+        console.error('Error when recordId prop changed:', error);
+        alertMessage.value = 'Error loading data';
+        alertType.value = 'error';
+      } finally {
+        loading.value = false;
+      }
     }
-  } catch (error) {
-    console.error('Error when props changed:', error);
-    alertMessage.value = 'Error loading data';
-    alertType.value = 'error';
-  } finally {
-    loading.value = false;
-  }
-});
+  },
+  { immediate: false }
+);
 
 watch(() => formData.value, (newValue, oldValue) => {
   if (!oldValue) return;

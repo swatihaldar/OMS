@@ -23,7 +23,7 @@
     <div v-else class="bg-white">
       <!-- Header with Actions -->
       <template v-if="!isEditing">
-  <div class="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div class="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-10">
     <div class="px-4 py-3 max-w-3xl mx-auto flex items-center justify-between">
       <div class="flex items-center">
         <button @click="$router.back()" class="mr-3 text-blue-600 pl-3">
@@ -65,7 +65,7 @@
       
 
       <!-- Mobile Tabs -->
-      <div v-if="!isEditing" class="md:hidden border-b border-gray-200">
+      <div v-if="!isEditing" class="md:hidden border-b border-gray-200 mt-16">
         <div class="flex overflow-x-auto">
           <button
             v-for="(section, index) in nonEmptySections"
@@ -298,83 +298,15 @@
                           </div>
 
                           <!-- Table fields -->
-                          <div
-                            v-else-if="field.fieldtype === 'Table' && record[field.fieldname] && record[field.fieldname].length > 0"
-                            class="mt-2 overflow-x-auto"
-                          >
-                            <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
-                              <thead class="bg-gray-50">
-                                <tr>
-                                  <th 
-                                    v-for="childField in getVisibleChildTableFields(field)" 
-                                    :key="childField.fieldname" 
-                                    class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                                    :style="getColumnStyle(childField)"
-                                  >
-                                    {{ childField.label }}
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="(row, rowIndex) in record[field.fieldname]" :key="rowIndex">
-                                  <td 
-                                    v-for="childField in getVisibleChildTableFields(field)" 
-                                    :key="childField.fieldname" 
-                                    class="px-3 py-2 text-sm text-blue-800 font-medium"
-                                    :style="getColumnStyle(childField)"
-                                  >
-                                    <!-- Different display formats based on field type -->
-                                    <template v-if="childField.fieldtype === 'Check'">
-                                      <span
-                                        v-if="row[childField.fieldname]"
-                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                                      >
-                                        <svg
-                                          class="-ml-0.5 mr-1 h-2 w-2 text-green-400"
-                                          fill="currentColor"
-                                          viewBox="0 0 8 8"
-                                        >
-                                          <circle cx="4" cy="4" r="3" />
-                                        </svg>
-                                        Yes
-                                      </span>
-                                      <span
-                                        v-else
-                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                                      >
-                                        <svg
-                                          class="-ml-0.5 mr-1 h-2 w-2 text-red-400"
-                                          fill="currentColor"
-                                          viewBox="0 0 8 8"
-                                        >
-                                          <circle cx="4" cy="4" r="3" />
-                                        </svg>
-                                        No
-                                      </span>
-                                    </template>
-                                    
-                                    <template v-else-if="childField.fieldtype === 'Color'">
-                                      <div class="flex items-center">
-                            <div
-                              class="h-4 w-4 rounded mr-1"
-                              :style="{ backgroundColor: row[childField.fieldname] || '#FFFFFF' }"
-                            ></div>
-                            <span>{{ row[childField.fieldname] }}</span>
-                          </div>
-                                    </template>
-                                    
-                                    <template v-else-if="childField.fieldtype === 'Date' || childField.fieldtype === 'Datetime'">
-                                      {{ formatDate(row[childField.fieldname]) }}
-                                    </template>
-                                    
-                                    <template v-else>
-                                      {{ row[childField.fieldname] }}
-                                    </template>
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
+                          <div v-else-if="field.fieldtype === 'Table'">
+  <EnhancedTableView
+    :rows="record[field.fieldname] || []"
+    :fields="getChildTableFields(field)"
+    :label="field.label"
+    :isCollapsible="true"
+  />
+</div>
+
                           <div
                             v-else-if="field.fieldtype === 'Table' && (!record[field.fieldname] || record[field.fieldname].length === 0)"
                             class="text-gray-500 italic"
@@ -644,83 +576,15 @@
                     </div>
 
                     <!-- Table fields -->
-                    <div
-                      v-else-if="field.fieldtype === 'Table' && record[field.fieldname] && record[field.fieldname].length > 0"
-                      class="mt-2 overflow-x-auto"
-                    >
-                      <table class="min-w-full divide-y divide-gray-200 border rounded-lg">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th 
-                              v-for="childField in getVisibleChildTableFields(field)" 
-                              :key="childField.fieldname" 
-                              class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap"
-                              :style="getColumnStyle(childField)"
-                            >
-                              {{ childField.label }}
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                          <tr v-for="(row, rowIndex) in record[field.fieldname]" :key="rowIndex">
-                            <td 
-                              v-for="childField in getVisibleChildTableFields(field)" 
-                              :key="childField.fieldname" 
-                              class="px-3 py-2 text-sm text-blue-800 font-medium"
-                              :style="getColumnStyle(childField)"
-                            >
-                              <!-- Different display formats based on field type -->
-                              <template v-if="childField.fieldtype === 'Check'">
-                                <span
-                                  v-if="row[childField.fieldname]"
-                                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                                >
-                                  <svg
-                                    class="-ml-0.5 mr-1 h-2 w-2 text-green-400"
-                                    fill="currentColor"
-                                    viewBox="0 0 8 8"
-                                  >
-                                    <circle cx="4" cy="4" r="3" />
-                                  </svg>
-                                  Yes
-                                </span>
-                                <span
-                                  v-else
-                                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                                >
-                                  <svg
-                                    class="-ml-0.5 mr-1 h-2 w-2 text-red-400"
-                                    fill="currentColor"
-                                    viewBox="0 0 8 8"
-                                  >
-                                    <circle cx="4" cy="4" r="3" />
-                                  </svg>
-                                  No
-                                </span>
-                              </template>
-                              
-                              <template v-else-if="childField.fieldtype === 'Color'">
-                                <div class="flex items-center">
-                                  <div 
-                                    class="h-4 w-4 rounded mr-1" 
-                                    :style="{ backgroundColor: row[childField.fieldname] || '#FFFFFF' }"
-                                  ></div>
-                                  <span>{{ row[childField.fieldname] }}</span>
-                                </div>
-                              </template>
-                              
-                              <template v-else-if="childField.fieldtype === 'Date' || childField.fieldtype === 'Datetime'">
-                                {{ formatDate(row[childField.fieldname]) }}
-                              </template>
-                              
-                              <template v-else>
-                                {{ row[childField.fieldname] }}
-                              </template>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+                    <div v-else-if="field.fieldtype === 'Table'">
+  <EnhancedTableView
+    :rows="record[field.fieldname] || []"
+    :fields="getChildTableFields(field)"
+    :label="field.label"
+    :isCollapsible="true"
+  />
+</div>
+
                     <div
                       v-else-if="field.fieldtype === 'Table' && (!record[field.fieldname] || record[field.fieldname].length === 0)"
                       class="text-gray-500 italic"
@@ -882,6 +746,7 @@ import { shouldHideViewField } from '../config/field-config'
 import FormHandler from './FormHandler.vue'
 import AssignmentDialog from './AssignmentDialog.vue'
 import AssignmentList from './AssignmentList.vue'
+import EnhancedTableView from './EnhancedTableView.vue'
 
 const props = defineProps({
   doctype: {
@@ -1019,6 +884,7 @@ const fieldSections = computed(() => {
     'docstatus',
     'idx',
   ]
+
   const visibleFields = formFields.value
     .filter(
       (field) =>
@@ -1028,6 +894,7 @@ const fieldSections = computed(() => {
         !systemFields.includes(field.fieldname)
     )
     .sort((a, b) => (a.idx || 0) - (b.idx || 0))
+    // debugger
 
   // Group fields into sections and columns
   for (const field of visibleFields) {
@@ -1425,8 +1292,9 @@ async function getTitleFieldForDoctype(doctype) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ doctype }),
     })
-    
+  
     const data = await response.json()
+    // debugger
     
     if (data.message && data.message.docs && data.message.docs[0]) {
       // Check if there's a title field defined

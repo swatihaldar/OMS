@@ -1,5 +1,3 @@
-
-  // Configuration for hiding fields in forms based on doctype
 interface DoctypeFieldConfig {
   hiddenFields: string[]
   readonlyFields: string[]

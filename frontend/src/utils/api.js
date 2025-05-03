@@ -134,116 +134,261 @@ async function fetchDocPermissions(doctype) {
 }
 
 /**
- * Fetch fields for a doctype
+ * IMPROVED: Fetch complete doctype fields with all metadata
+ * This function tries multiple API endpoints and merges the results
  * @param {string} doctype - The doctype name
- * @returns {Promise<Array>} - Array of field objects
+ * @returns {Promise<Object>} - Object with fields and metadata
  */
 async function fetchDoctypeFields(doctype) {
   // Check cache first
   if (apiCache.doctypeFields[doctype]) {
+    console.log(`Using cached fields for ${doctype}`)
     return apiCache.doctypeFields[doctype]
   }
 
   try {
-    console.log(`Fetching doctype fields for ${doctype}...`)
-
+    console.log(`Fetching complete doctype information for ${doctype}...`)
+    
+    // We'll try multiple API endpoints and merge the results
+    let allResults = {
+      fields: [],
+      meta: null,
+      permissions: []
+    }
+    
+    // Track which fields we've already processed to avoid duplicates
+    const processedFieldnames = new Set()
+    
+    // 1. Try the custom API first (if available)
     try {
-      const response = await fetch("/api/method/oms.api.get_doctype_fields", {
+      console.log(`Trying custom API for ${doctype}...`)
+      const customResponse = await fetch("/api/method/oms.api.get_doctype_fields", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          doctype: doctype,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctype }),
+        credentials: "include"
       })
-
-      const data = await response.json()
-      // debugger;
-
-      if (data.message && Array.isArray(data.message) && data.message.length > 0) {
-        apiCache.doctypeFields[doctype] = data.message
-        console.log(`Successfully fetched ${data.message.length} fields using custom API`)
-        return data.message
-      } else {
-        console.log("Custom API returned no fields, falling back to standard API")
+      
+      if (customResponse.ok) {
+        const data = await customResponse.json()
+        if (data && data.message && Array.isArray(data.message)) {
+          console.log(`Custom API returned ${data.message.length} fields`)
+          
+          // Add fields from custom API
+          data.message.forEach(field => {
+            if (field && field.fieldname && !processedFieldnames.has(field.fieldname)) {
+              allResults.fields.push(field)
+              processedFieldnames.add(field.fieldname)
+            }
+          })
+        }
       }
     } catch (error) {
-      console.error("Error using custom API, falling back to standard API:", error)
+      console.warn("Custom API failed or not available:", error)
     }
-
-    // Fallback to standard Frappe API
-    const response = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        doctype: doctype,
-      }),
+    
+    // 2. Try the resource API (good for metadata like quick_entry and collapsible)
+    try {
+      console.log(`Trying resource API for ${doctype}...`)
+      const resourceResponse = await fetch(`/api/resource/DocType/${doctype}`, {
+        method: "GET",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        credentials: "include"
+      })
+      
+      if (resourceResponse.ok) {
+        const data = await resourceResponse.json()
+        if (data && data.data) {
+          console.log(`Resource API returned data for ${doctype}`)
+          
+          // Store doctype metadata
+          allResults.meta = data.data
+          
+          // Process fields
+          if (data.data.fields && Array.isArray(data.data.fields)) {
+            data.data.fields.forEach(field => {
+              if (field && field.fieldname) {
+                if (processedFieldnames.has(field.fieldname)) {
+                  // Update existing field with any missing properties
+                  const existingField = allResults.fields.find(f => f.fieldname === field.fieldname)
+                  if (existingField) {
+                    // Merge properties, prioritizing existing values
+                    Object.keys(field).forEach(key => {
+                      if (existingField[key] === undefined || existingField[key] === null) {
+                        existingField[key] = field[key]
+                      }
+                    })
+                  }
+                } else {
+                  // Add new field
+                  allResults.fields.push(field)
+                  processedFieldnames.add(field.fieldname)
+                }
+              }
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("Resource API failed:", error)
+    }
+    
+    // 3. Try the desk form load API (good for descriptions and other field properties)
+    try {
+      console.log(`Trying desk form load API for ${doctype}...`)
+      const formLoadResponse = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctype }),
+        credentials: "include"
+      })
+      
+      if (formLoadResponse.ok) {
+        const data = await formLoadResponse.json()
+        if (data && data.message && data.message.docs && data.message.docs[0]) {
+          console.log(`Form load API returned data for ${doctype}`)
+          
+          // If we don't have metadata yet, use this
+          if (!allResults.meta) {
+            allResults.meta = data.message.docs[0]
+          } else {
+            // Otherwise, merge metadata properties
+            Object.keys(data.message.docs[0]).forEach(key => {
+              if (key !== 'fields' && (allResults.meta[key] === undefined || allResults.meta[key] === null)) {
+                allResults.meta[key] = data.message.docs[0][key]
+              }
+            })
+          }
+          
+          // Store permissions
+          if (data.message.perm) {
+            allResults.permissions = data.message.perm
+          }
+          
+          // Process fields
+          if (data.message.docs[0].fields && Array.isArray(data.message.docs[0].fields)) {
+            data.message.docs[0].fields.forEach(field => {
+              if (field && field.fieldname) {
+                if (processedFieldnames.has(field.fieldname)) {
+                  // Update existing field with any missing properties
+                  const existingField = allResults.fields.find(f => f.fieldname === field.fieldname)
+                  if (existingField) {
+                    // Merge properties, prioritizing existing values for most properties
+                    // but taking description from this API if available
+                    Object.keys(field).forEach(key => {
+                      if (key === 'description' && field[key]) {
+                        existingField[key] = field[key]
+                      } else if (existingField[key] === undefined || existingField[key] === null) {
+                        existingField[key] = field[key]
+                      }
+                    })
+                  }
+                } else {
+                  // Add new field
+                  allResults.fields.push(field)
+                  processedFieldnames.add(field.fieldname)
+                }
+              }
+            })
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("Form load API failed:", error)
+    }
+    
+    // If we still don't have any fields, try one more API
+    if (allResults.fields.length === 0) {
+      try {
+        console.log(`Trying get_doctype API for ${doctype}...`)
+        const getDocTypeResponse = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            doctype,
+            with_parent: 1
+          }),
+          credentials: "include"
+        })
+        
+        if (getDocTypeResponse.ok) {
+          const data = await getDocTypeResponse.json()
+          if (data && data.message && data.message.docs && data.message.docs[0]) {
+            console.log(`Get doctype API returned data for ${doctype}`)
+            
+            // If we don't have metadata yet, use this
+            if (!allResults.meta) {
+              allResults.meta = data.message.docs[0]
+            }
+            
+            // Process fields
+            if (data.message.docs[0].fields && Array.isArray(data.message.docs[0].fields)) {
+              data.message.docs[0].fields.forEach(field => {
+                if (field && field.fieldname && !processedFieldnames.has(field.fieldname)) {
+                  allResults.fields.push(field)
+                  processedFieldnames.add(field.fieldname)
+                }
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("Get doctype API failed:", error)
+      }
+    }
+    
+    // If we still don't have any fields, throw an error
+    if (allResults.fields.length === 0) {
+      throw new Error(`Could not fetch fields for ${doctype} from any API`)
+    }
+    
+    // Ensure all fields have the required properties
+    allResults.fields = allResults.fields.map(field => {
+      return {
+        fieldname: field.fieldname || '',
+        fieldtype: field.fieldtype || 'Data',
+        label: field.label || field.fieldname || '',
+        reqd: field.reqd || 0,
+        hidden: field.hidden || 0,
+        read_only: field.read_only || 0,
+        options: field.options || '',
+        default: field.default || '',
+        description: field.description || '',
+        idx: field.idx || 0,
+        allow_in_quick_entry: field.allow_in_quick_entry || 0,
+        collapsible: field.collapsible || 0,
+        ...field // Keep any other properties
+      }
     })
-
-    const data = await response.json()
-    // debugger;
-
-    if (data.message && data.message.docs && data.message.docs[0]) {
-      // Get the doctype definition
-      const doctypeDef = data.message.docs[0]
-
-      // Store all fields
-      apiCache.doctypeFields[doctype] = doctypeDef.fields || []
-      console.log(`Successfully fetched ${doctypeDef.fields.length} fields using standard API`)
-      return doctypeDef.fields
-    } else {
-      console.error("Failed to get fields from standard API")
-      throw new Error("Failed to get doctype fields")
-    }
+    
+    // Sort fields by idx
+    allResults.fields.sort((a, b) => (a.idx || 0) - (b.idx || 0))
+    
+    // Store in cache
+    apiCache.doctypeFields[doctype] = allResults
+    
+    console.log(`Successfully merged field data for ${doctype} from multiple sources`)
+    console.log(`Total fields: ${allResults.fields.length}`)
+    
+    // Debug: Check for fields with specific properties
+    const quickEntryFields = allResults.fields.filter(f => f.allow_in_quick_entry === 1)
+    const collapsibleSections = allResults.fields.filter(f => f.fieldtype === 'Section Break' && f.collapsible === 1)
+    const fieldsWithDesc = allResults.fields.filter(f => f.description && f.description.trim() !== '')
+    
+    console.log(`Fields with allow_in_quick_entry=1: ${quickEntryFields.length}`)
+    console.log(`Collapsible sections: ${collapsibleSections.length}`)
+    console.log(`Fields with descriptions: ${fieldsWithDesc.length}`)
+    
+    return allResults
+    
   } catch (error) {
     console.error("Error fetching doctype fields:", error)
     throw error
   }
 }
-
-
-
-// async function fetchDoctypeFields(doctype) {
-//   // Check cache first
-//   if (apiCache.doctypeFields[doctype]) {
-//     return apiCache.doctypeFields[doctype];
-//   }
-
-//   try {
-//     console.log(`Fetching doctype fields for ${doctype}...`);
-
-//     // Use standard Frappe API (which includes all field properties)
-//     const response = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         doctype: doctype,
-//       }),
-//     });
-
-//     const data = await response.json();
-
-//     if (data.message?.docs?.[0]?.fields) {
-//       const fields = data.message.docs[0].fields;
-
-//       // Cache the full field definitions (including all properties)
-//       apiCache.doctypeFields[doctype] = fields;
-//       console.log(`Fetched ${fields.length} fields with full properties`);
-//       return fields;
-//     } else {
-//       console.error("Failed to fetch fields from standard API");
-//       throw new Error("Failed to get doctype fields");
-//     }
-//   } catch (error) {
-//     console.error("Error fetching doctype fields:", error);
-//     throw error;
-//   }
-// }
 
 /**
  * Get field permissions for a doctype
@@ -252,7 +397,8 @@ async function fetchDoctypeFields(doctype) {
  */
 async function getFieldPermissions(doctype) {
   try {
-    const fields = await fetchDoctypeFields(doctype)
+    const doctypeData = await fetchDoctypeFields(doctype)
+    const fields = doctypeData.fields || []
 
     const fieldPermissions = {}
 
@@ -374,8 +520,6 @@ async function fetchDocument(doctype, name) {
     })
 
     const data = await response.json()
-    console.log('Data=',data);
-    // debugger;
 
     if (data.message) {
       return data.message
@@ -470,9 +614,11 @@ async function fetchDocumentList(options) {
   }
 }
 
-
-//  Create a new document
- 
+/**
+ * Create a new document
+ * @param {Object} doc - The document object
+ * @returns {Promise<Object>} - The created document
+ */
 async function createDocument(doc) {
   try {
     const response = await fetch("/api/method/frappe.client.insert", {
@@ -738,11 +884,12 @@ async function uploadFile(file, doctype, fieldname, docname) {
   }
 }
 
-
-
-
-
-export async function fetchChildTableFields(doctype) {
+/**
+ * Fetch fields for a child table doctype
+ * @param {string} doctype - The child table doctype name
+ * @returns {Promise<Array>} - Array of field objects
+ */
+async function fetchChildTableFields(doctype) {
   try {
     const response = await fetch("/api/method/frappe.desk.form.load.getdoctype", {
       method: "POST",
@@ -770,8 +917,14 @@ export async function fetchChildTableFields(doctype) {
   }
 }
 
-
-export async function fetchLinkOption(doctype, fields = ["name"], filters = {}) {
+/**
+ * Fetch options for a link field (simplified version)
+ * @param {string} doctype - The linked doctype
+ * @param {Array} fields - The fields to fetch
+ * @param {Object} filters - Optional filters to apply
+ * @returns {Promise<Array>} - Array of option objects
+ */
+async function fetchLinkOption(doctype, fields = ["name"], filters = {}) {
   try {
     const response = await fetch("/api/method/frappe.client.get_list", {
       method: "POST",
@@ -796,8 +949,6 @@ export async function fetchLinkOption(doctype, fields = ["name"], filters = {}) 
     return []
   }
 }
-
-
 
 /**
  * Clear the API cache
@@ -827,4 +978,6 @@ export default {
   uploadFileToTemp,
   attachFileToDoc,
   clearCache,
+  fetchChildTableFields,
+  fetchLinkOption,
 }

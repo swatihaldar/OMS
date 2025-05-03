@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!loading && filteredUserTasks.length > 0" class="mb-6">
+  <div v-if="!loading && userTasks.length > 0" class="mb-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-gray-800">My Tasks</h2>
       <button 
@@ -16,7 +16,7 @@
     <div class="overflow-x-auto pb-2">
       <div class="flex space-x-4">
         <div 
-          v-for="task in filteredUserTasks" 
+          v-for="task in userTasks" 
           :key="task.name"
           @click="$router.push(`/task/${task.name}`)"
           class="bg-white rounded-lg shadow-sm p-4 min-w-[280px] max-w-[320px] cursor-pointer hover:shadow-md transition-shadow"
@@ -54,6 +54,12 @@
               }"
             >
               {{ task.priority }}
+            </span>
+            <span 
+              v-if="isAssignedToMe(task)" 
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+            >
+              Assigned
             </span>
           </div>
           
@@ -104,10 +110,18 @@
       <div class="h-2 bg-gray-200 rounded w-full"></div>
     </div>
   </div>
+  <div v-else class="mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-800">My Tasks</h2>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm p-4 text-center text-gray-500">
+      No active tasks found
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -115,44 +129,85 @@ const userTasks = ref([]);
 const loading = ref(true);
 const currentUser = ref(null);
 
-// Get the current logged-in user
 const getCurrentUser = async () => {
   try {
+    // Try to get from session
     const response = await fetch('/api/method/frappe.auth.get_logged_user');
     const data = await response.json();
     return data.message;
   } catch (error) {
     console.error('Error getting current user:', error);
+    // Fallback to a default user for testing
     return 'Administrator';
   }
 };
 
-// Fetch tasks (could be assigned or owned)
 const fetchUserTasks = async () => {
+  currentUser.value = await getCurrentUser();
+
   try {
     loading.value = true;
-    currentUser.value = await getCurrentUser();
+    
+    
     if (!currentUser.value) {
       console.error('Could not determine current user');
       return;
     }
-
-    // Fetch all tasks (could be optimized with a better backend filter)
-    let response = await fetch('/api/method/frappe.client.get_list', {
+    
+    console.log('Fetching tasks for user:', currentUser.value);
+    
+    // Fetch tasks assigned to the current user
+    const assignedResponse = await fetch('/api/method/frappe.client.get_list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         doctype: 'Task',
         fields: ['name', 'subject', 'status', 'priority', 'description', 'exp_end_date', 'progress', 'owner', '_assign'],
-        limit: 50,
+        filters: {
+          '_assign': ['like', `%${currentUser.value}%`],
+          'status': ['!=', 'Completed'] // Exclude completed tasks
+        },
+        limit: 10,
         order_by: 'exp_end_date asc'
       })
     });
-    let data = await response.json();
-    let tasks = data.message || [];
-
-    // Optionally enrich with owner_name
-    const tasksWithOwnerNames = await Promise.all(tasks.map(async (task) => {
+    
+    const assignedData = await assignedResponse.json();
+    let assignedTasks = assignedData.message || [];
+    
+    // Fetch tasks created by the current user
+    const createdResponse = await fetch('/api/method/frappe.client.get_list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        doctype: 'Task',
+        fields: ['name', 'subject', 'status', 'priority', 'description', 'exp_end_date', 'progress', 'owner', '_assign'],
+        filters: {
+          'owner': currentUser.value,
+          'status': ['!=', 'Completed'] // Exclude completed tasks
+        },
+        limit: 10,
+        order_by: 'exp_end_date asc'
+      })
+    });
+    
+    const createdData = await createdResponse.json();
+    let createdTasks = createdData.message || [];
+    
+    // Combine tasks and remove duplicates
+    const allTasks = [...assignedTasks];
+    
+    // Add created tasks that aren't already in the list (to avoid duplicates)
+    createdTasks.forEach(task => {
+      if (!allTasks.some(t => t.name === task.name)) {
+        allTasks.push(task);
+      }
+    });
+    
+    console.log('Combined tasks found:', allTasks.length);
+    
+    // Process tasks to add owner names
+    const tasksWithOwnerNames = await Promise.all(allTasks.map(async (task) => {
       try {
         if (task.owner) {
           const userResponse = await fetch('/api/method/frappe.client.get', {
@@ -163,6 +218,7 @@ const fetchUserTasks = async () => {
               name: task.owner
             })
           });
+          
           if (userResponse.ok) {
             const userData = await userResponse.json();
             if (userData.message) {
@@ -175,45 +231,25 @@ const fetchUserTasks = async () => {
         }
         return task;
       } catch (error) {
+        console.error('Error fetching user details:', error);
         return task;
       }
     }));
-
+    
     userTasks.value = tasksWithOwnerNames;
+    console.log('User tasks with owner names:', userTasks.value);
+    
   } catch (error) {
+    console.error('Error fetching user tasks:', error);
     userTasks.value = [];
   } finally {
     loading.value = false;
   }
 };
 
-// Computed property to filter tasks
-const filteredUserTasks = computed(() => {
-  if (!userTasks.value || !currentUser.value) return [];
-  return userTasks.value.filter(task => {
-    // Only show if current user is owner or assigned, and not completed
-    const isOwner = task.owner === currentUser.value;
-    let isAssigned = false;
-    if (task._assign) {
-      try {
-        // _assign may be a JSON array string or a comma-separated string
-        if (task._assign.trim().startsWith('[')) {
-          const assignedArr = JSON.parse(task._assign);
-          isAssigned = Array.isArray(assignedArr) && assignedArr.includes(currentUser.value);
-        } else {
-          isAssigned = task._assign.split(',').map(u => u.trim()).includes(currentUser.value);
-        }
-      } catch {
-        isAssigned = task._assign.split(',').map(u => u.trim()).includes(currentUser.value);
-      }
-    }
-    const notCompleted = task.status !== 'Completed';
-    return (isOwner || isAssigned) && notCompleted;
-  });
-});
-
 const formatDate = (dateString) => {
   if (!dateString) return '';
+  
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
     day: 'numeric',
@@ -224,13 +260,29 @@ const formatDate = (dateString) => {
 
 const isOverdue = (task) => {
   if (!task.exp_end_date) return false;
+  
   const dueDate = new Date(task.exp_end_date);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  
   return dueDate < today && task.status !== 'Completed';
 };
 
-onMounted(fetchUserTasks);
+const isAssignedToMe = (task) => {
+  if (!task._assign) return false;
+  
+  try {
+    const assignedUsers = JSON.parse(task._assign);
+    return assignedUsers.includes(currentUser.value);
+  } catch (error) {
+    console.error('Error parsing _assign field:', error);
+    return false;
+  }
+};
+
+onMounted(async () => {
+  await fetchUserTasks();
+});
 </script>
 
 <style scoped>

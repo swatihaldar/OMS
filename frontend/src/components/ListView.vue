@@ -769,13 +769,28 @@ const formatDate = (dateString) => {
 };
 
 // List view methods
+// List view methods
 const handleSearch = () => {
   clearTimeout(window.searchTimeout);
   window.searchTimeout = setTimeout(() => {
     currentPage.value = 1;
-    fetchAllRecords();
+    // Filter the allRecords directly instead of fetching again
+    if (searchQuery.value.trim()) {
+      const query = searchQuery.value.trim().toLowerCase();
+      const filtered = allRecords.value.filter(record => 
+        record.name.toLowerCase().includes(query) || 
+        (record[props.titleField] && record[props.titleField].toLowerCase().includes(query))
+      );
+      records.value = filtered.slice(0, pageSize.value);
+      totalRecords.value = filtered.length;
+      totalPages.value = Math.ceil(totalRecords.value / pageSize.value);
+    } else {
+      // If search is cleared, restore original records
+      updateDisplayedRecords();
+    }
   }, 300);
 };
+
 
 const resetFilters = () => {
   statusFilter.value = '';
@@ -828,6 +843,7 @@ const handleClickOutside = (event) => {
     showFilterPanel.value = false;
   }
 };
+
 
 onMounted(async () => {
   console.log(`ListView component mounted for ${props.doctype}`);
