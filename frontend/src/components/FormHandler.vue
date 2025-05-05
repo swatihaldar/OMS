@@ -163,6 +163,7 @@ const alertType = ref('info');
 const clientScripts = ref([]);
 const eventHandlers = ref({});
 const userPermissions = ref([]);
+const headerTitle = ref('');
 
 // Quick Entry related refs
 const showQuickEntryDialog = ref(false);
@@ -286,8 +287,8 @@ const processFields = () => {
 const prepareQuickEntryFields = () => {
   if (!formFields.value || formFields.value.length === 0) return;
 
-  // Get fields that are marked for quick entry
-  quickEntryFields.value = formFields.value
+  // Get fields that are marked for quick entry - PRIORITIZE THESE
+  const fieldsWithQuickEntry = formFields.value
     .filter(field => {
       // Include if explicitly marked for quick entry
       const isQuickEntry = field.allow_in_quick_entry === 1 || 
@@ -301,8 +302,13 @@ const prepareQuickEntryFields = () => {
     })
     .sort((a, b) => (a.idx || 0) - (b.idx || 0));
 
+  // If we have fields marked for quick entry, use those
+  if (fieldsWithQuickEntry.length > 0) {
+    quickEntryFields.value = fieldsWithQuickEntry;
+    console.log('Using fields explicitly marked for quick entry:', quickEntryFields.value);
+  }
   // If no fields are marked for quick entry, check if doctype has quick_entry enabled
-  if (quickEntryFields.value.length === 0 && doctypeMeta.value?.quick_entry === 1) {
+  else if (doctypeMeta.value?.quick_entry === 1) {
     // First include mandatory fields
     const mandatoryFields = formFields.value.filter(field => {
       const isMandatory = field.reqd === 1 || field.reqd === true || field.reqd === '1';
@@ -326,6 +332,9 @@ const prepareQuickEntryFields = () => {
       
       quickEntryFields.value = [...quickEntryFields.value, ...commonFields];
     }
+  } else {
+    // No quick entry enabled, use a minimal set of fields
+    quickEntryFields.value = [];
   }
 
   // Initialize quick entry data
@@ -334,7 +343,7 @@ const prepareQuickEntryFields = () => {
     quickEntryData.value[field.fieldname] = field.default || '';
   });
 
-  console.log('Quick entry fields:', quickEntryFields.value);
+  console.log('Final quick entry fields:', quickEntryFields.value);
 };
 
 // Submit quick entry form
@@ -703,6 +712,9 @@ const handleDelete = async (docname) => {
 // Initialize component
 onMounted(async () => {
   console.log(`FormHandler component mounted for ${props.doctype}`);
+  
+  // Set the header title based on the mode
+  headerTitle.value = isEditMode.value ? 'Edit' : 'New';
   
   try {
     await fetchDoctypeFields();

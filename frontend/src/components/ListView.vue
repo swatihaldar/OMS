@@ -881,7 +881,7 @@ watch(() => props.doctype, async () => {
     await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
-    await fetchAssignedRecords(); // Fetch assigned records when doctype changes
+    await fetchAssignedRecords();
     await fetchAllRecords();
   } catch (error) {
     console.error('Error when doctype changed:', error);

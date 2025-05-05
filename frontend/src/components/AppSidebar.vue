@@ -63,7 +63,7 @@
             </div>
             <div v-else>
               <h3 class="font-semibold text-lg truncate">{{ userData?.full_name || 'User Name' }}</h3>
-              <p class="text-xs text-blue-100 truncate opacity-90">{{ userData?.email || 'user@example.com' }}</p>
+              <!-- <p class="text-xs text-blue-100 truncate opacity-90">{{ userData?.email || 'user@example.com' }}</p> -->
               <p v-if="userData?.user_id" class="text-xs text-blue-100 truncate opacity-75 mt-0.5">ID: {{ userData.user_id }}</p>
             </div>
           </div>
@@ -109,6 +109,7 @@
             class="group flex items-center px-4 py-2.5 mx-2 my-1 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200" 
             active-class="bg-white bg-opacity-20 text-white"
             @mouseenter="animateIcon('home')"
+            @click="isMobile && toggleSidebar()"
           >
             <div class="flex items-center w-full">
               <div 
@@ -163,6 +164,7 @@
             >
               <router-link 
                 to="/issue" 
+                @click="isMobile && toggleSidebar()"
                 class="flex items-center px-4 py-2 text-sm text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 hover:text-opacity-100 rounded-md transition-all duration-200 hover:translate-x-1" 
                 active-class="text-white bg-white bg-opacity-10"
               >
@@ -170,6 +172,7 @@
               </router-link>
               <router-link 
                 to="/issue/new" 
+                @click="isMobile && toggleSidebar()"
                 class="flex items-center px-4 py-2 text-sm text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 hover:text-opacity-100 rounded-md transition-all duration-200 hover:translate-x-1" 
                 active-class="text-white bg-white bg-opacity-10"
               >
@@ -218,6 +221,7 @@
             >
               <router-link 
                 to="/task" 
+                @click="isMobile && toggleSidebar()"
                 class="flex items-center px-4 py-2 text-sm text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 hover:text-opacity-100 rounded-md transition-all duration-200 hover:translate-x-1" 
                 active-class="text-white bg-white bg-opacity-10"
               >
@@ -225,6 +229,7 @@
               </router-link>
               <router-link 
                 to="/task/new" 
+                @click="isMobile && toggleSidebar()"
                 class="flex items-center px-4 py-2 text-sm text-white text-opacity-80 hover:bg-white hover:bg-opacity-10 hover:text-opacity-100 rounded-md transition-all duration-200 hover:translate-x-1" 
                 active-class="text-white bg-white bg-opacity-10"
               >
@@ -239,6 +244,7 @@
             class="group flex items-center px-4 py-2.5 mx-2 my-1 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200" 
             active-class="bg-white bg-opacity-20 text-white"
             @mouseenter="animateIcon('timesheets')"
+            @click="isMobile && toggleSidebar()"
           >
             <div class="flex items-center w-full">
               <div 
@@ -259,6 +265,7 @@
             class="group flex items-center px-4 py-2.5 mx-2 my-1 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200" 
             active-class="bg-white bg-opacity-20 text-white"
             @mouseenter="animateIcon('profile')"
+            @click="isMobile && toggleSidebar()"
           >
             <div class="flex items-center w-full">
               <div 

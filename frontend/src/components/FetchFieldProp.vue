@@ -33,12 +33,18 @@
             <div v-if="field.fieldtype === 'Section Break'" class="col-span-1 md:col-span-2 border-t border-gray-200 pt-6 mt-6">
               <!-- Collapsible Section Header -->
               <div v-if="field.label" 
-                   :class="{'cursor-pointer': field.collapsible === 1}"
-                   class="flex items-center justify-between mb-4"
+                   :class="{'cursor-pointer hover:bg-gray-50 p-2 rounded-lg flex items-center justify-between': field.collapsible === 1, 'mb-4': !field.collapsible}"
                    @click="field.collapsible === 1 ? toggleSection(field.fieldname) : null">
-                <h3 class="text-lg font-medium text-gray-900">{{ field.label }}</h3>
+                <h3 class="text-lg font-medium" :class="{'text-gray-900': !field.collapsible, 'text-blue-700': field.collapsible === 1}">
+                  <div class="flex items-center">
+                    <svg v-if="field.collapsible === 1" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                    {{ field.label }}
+                  </div>
+                </h3>
                 <svg v-if="field.collapsible === 1" 
-                     class="h-5 w-5 text-gray-500 transition-transform duration-200" 
+                     class="h-5 w-5 text-blue-600 transition-transform duration-200" 
                      :class="isSectionCollapsed(field.fieldname) ? '' : 'transform rotate-180'"
                      fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -310,26 +316,48 @@
               <!-- Checkbox fields -->
               <div v-else-if="field.fieldtype === 'Check'">
                 <div class="flex items-center">
-                  <input
-                    v-model="formData[field.fieldname]"
-                    type="checkbox"
-                    :disabled="field.read_only || isReadOnly"
-                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    :class="{'bg-gray-100': field.read_only || isReadOnly}"
-                    @change="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
-                  />
-                  <label 
-                    class="ml-2 block text-sm text-gray-700 group relative"
-                  >
-                    {{ field.label }}
-                    <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
-                      <span v-html="field.description"></span>
-                    </div>
-                  </span>
+                  <label class="inline-flex items-center cursor-pointer">
+                    <!-- Hidden actual checkbox -->
+                    <input
+                      v-model="formData[field.fieldname]"
+                      type="checkbox"
+                      :disabled="field.read_only || isReadOnly"
+                      class="absolute opacity-0 w-0 h-0"
+                      @change="() => handleFieldChange({ fieldname: field.fieldname, value: formData[field.fieldname] })"
+                    />
+                    <!-- Custom circular checkbox -->
+                    <span 
+                      class="relative flex items-center justify-center h-4 w-4 rounded-full border-2 transition-all"
+                      :class="{
+                        'border-blue-600 bg-blue-600': formData[field.fieldname] === 1 || formData[field.fieldname] === true || formData[field.fieldname] === '1',
+                        'border-gray-300': !(formData[field.fieldname] === 1 || formData[field.fieldname] === true || formData[field.fieldname] === '1'),
+                        'bg-gray-100 border-gray-200': field.read_only || isReadOnly,
+                        'cursor-not-allowed': field.read_only || isReadOnly
+                      }"
+                    >
+                      <!-- Inner circle (visible when checked) -->
+                      <svg 
+                        v-if="formData[field.fieldname] === 1 || formData[field.fieldname] === true || formData[field.fieldname] === '1'"
+                        class="h-2 w-2 text-white"
+                        viewBox="0 0 8 8"
+                        fill="currentColor"
+                      >
+                        <circle cx="4" cy="4" r="3" />
+                      </svg>
+                    </span>
+                    <span 
+                      class="ml-2 block text-sm text-gray-700 group relative"
+                    >
+                      {{ field.label }}
+                      <span v-if="field.description" class="ml-1 text-gray-400 hover:text-gray-600 cursor-help">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div class="absolute hidden group-hover:block bg-black text-white text-xs rounded p-2 z-50 w-48 -mt-1 ml-4">
+                          <span v-html="field.description"></span>
+                        </div>
+                      </span>
+                    </span>
                   </label>
                 </div>
               </div>
@@ -418,7 +446,7 @@
                     class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                   >
                     <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                     </svg>
                   </button>
                 </div>
@@ -720,6 +748,7 @@ const getFilteredOptionsForField = (field) => {
   );
 };
 
+// Improve the getFieldDisplayValue function to better handle linked fields
 const getFieldDisplayValue = (fieldname) => {
   const field = props.fields.find(f => f.fieldname === fieldname);
   if (!field) return formData.value[fieldname] || '';
@@ -729,6 +758,12 @@ const getFieldDisplayValue = (fieldname) => {
     const options = props.fieldOptions[fieldname] || linkFieldOptions.value[fieldname] || [];
     const option = options.find(opt => opt.value === formData.value[fieldname]);
     return option ? option.label : formData.value[fieldname] || '';
+  }
+  
+  // Handle checkbox values
+  if (field.fieldtype === 'Check') {
+    const value = formData.value[fieldname];
+    return value === 1 || value === true || value === '1' ? 'Yes' : 'No';
   }
   
   return formData.value[fieldname] || '';
@@ -791,7 +826,7 @@ const openLinkDropdown = (fieldname) => {
     const field = props.fields.find(f => f.fieldname === fieldname);
     if (field && field.fieldtype === 'Link') {
       const options = getOptionsForField(field);
-      const option = options.find(opt => opt.value === formData.value[fieldname]);
+      const option = options.find(opt => opt.value === formData.value[field.fieldname]);
       if (option) {
         linkSearchQueries.value[fieldname] = option.label;
       } else if (formData.value[fieldname]) {
@@ -876,7 +911,8 @@ const toggleSection = (sectionFieldname) => {
 };
 
 const isSectionCollapsed = (sectionFieldname) => {
-  return !!collapsedSections.value[sectionFieldname];
+  // Default to collapsed for collapsible sections
+  return collapsedSections.value[sectionFieldname] !== false;
 };
 
 // Check if a field is in a collapsed section
@@ -1486,7 +1522,7 @@ watch(userPermissions, () => {
 const processCollapsibleSections = () => {
   visibleFields.value.forEach(field => {
     if (field.fieldtype === 'Section Break' && field.collapsible === 1) {
-      // Initialize as COLLAPSED by default (changed from false to true)
+      // Initialize as COLLAPSED by default
       if (collapsedSections.value[field.fieldname] === undefined) {
         collapsedSections.value[field.fieldname] = true;
       }
@@ -1617,5 +1653,17 @@ textarea,
   .ql-snow.ql-toolbar button svg, .ql-snow .ql-toolbar button svg  {
         height: 50%;
     }
+}
+
+/* Add to the <style> section */
+.collapsible-section {
+  border-left: 3px solid #3b82f6;
+  padding-left: 0.75rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.collapsible-section.collapsed {
+  border-left-color: #e5e7eb;
 }
 </style>

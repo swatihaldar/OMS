@@ -143,7 +143,7 @@
               </template>
               
               <template v-else>
-                {{ row[field.fieldname] }}
+                {{ row[field.fieldname] || '-' }}
               </template>
             </td>
             <td class="px-3 py-2 text-right">
@@ -160,133 +160,93 @@
         </tbody>
       </table>
     </div>
-  </div>
 
-  <!-- Row Details Modal (moved outside the container for better z-index handling) -->
-  <teleport to="body">
-    <div 
-      v-if="showRowDetails" 
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-[9999]"
-      @click.self="showRowDetails = false"
-    >
-      <div class="bg-white rounded-t-lg md:rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        <div class="px-4 py-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-          <h3 class="text-lg font-medium text-gray-900">{{ label }} Details</h3>
-          <button @click="showRowDetails = false" class="text-gray-400 hover:text-gray-500">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <div class="p-4 overflow-y-auto max-h-[calc(90vh-4rem)]">
-          <div v-if="Object.keys(selectedRow).length === 0" class="text-center py-8 text-gray-500">
-            No data available for this item.
+    <!-- Row Details Modal -->
+    <teleport to="body">
+      <div 
+        v-if="showRowDetails && selectedRow" 
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-[9999]"
+        @click.self="showRowDetails = false"
+      >
+        <div class="bg-white rounded-t-lg md:rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
+            <h3 class="text-lg font-medium text-gray-900">{{ label }} Details</h3>
+            <button @click="showRowDetails = false" class="text-gray-400 hover:text-gray-500">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
           
-          <div v-else class="space-y-4">
-            <div 
-              v-for="field in allFields" 
-              :key="field.fieldname"
-              class="border-b border-gray-100 pb-3 last:border-b-0"
-            >
-              <div class="text-sm font-medium text-gray-500 mb-1">
-                {{ field.label }}
-              </div>
-              
-              <!-- Different display formats based on field type -->
-              <template v-if="field.fieldtype === 'Check'">
-                <span
-                  v-if="selectedRow[field.fieldname]"
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                >
-                  <svg
-                    class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400"
-                    fill="currentColor"
-                    viewBox="0 0 8 8"
-                  >
-                    <circle cx="4" cy="4" r="3" />
-                  </svg>
-                  Yes
-                </span>
-                <span
-                  v-else
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"
-                >
-                  <svg
-                    class="-ml-0.5 mr-1.5 h-2 w-2 text-red-400"
-                    fill="currentColor"
-                    viewBox="0 0 8 8"
-                  >
-                    <circle cx="4" cy="4" r="3" />
-                  </svg>
-                  No
-                </span>
-              </template>
-              
-              <template v-else-if="field.fieldtype === 'Color' && selectedRow[field.fieldname]">
-                <div class="flex items-center">
-                  <div 
-                    class="h-5 w-5 rounded mr-2" 
-                    :style="{ backgroundColor: selectedRow[field.fieldname] }"
-                  ></div>
-                  <span class="text-blue-800 font-medium">{{ selectedRow[field.fieldname] }}</span>
-                </div>
-              </template>
-              
-              <template v-else-if="field.fieldtype === 'Date' || field.fieldtype === 'Datetime'">
-                <div class="text-blue-800 font-medium">
-                  {{ formatDate(selectedRow[field.fieldname]) }}
-                </div>
-              </template>
+          <div class="p-4 overflow-y-auto max-h-[calc(90vh-4rem)]">
+            <div class="space-y-4">
+              <template v-for="field in allFields" :key="field.fieldname">
+                <div class="border-b border-gray-100 pb-3 last:border-b-0">
+                  <div class="text-sm font-medium text-gray-500 mb-1">
+                    {{ field.label || field.fieldname }}
+                  </div>
+                  
+                  <div class="text-blue-800 font-medium">
+                    <template v-if="field.fieldtype === 'Check'">
+                      <span v-if="selectedRow[field.fieldname]" class="text-green-600">Yes</span>
+                      <span v-else class="text-red-600">No</span>
+                    </template>
+                    
+                    <template v-else-if="field.fieldtype === 'Color'">
+                      <div class="flex items-center">
+                        <div 
+                          class="h-5 w-5 rounded mr-2" 
+                          :style="{ backgroundColor: selectedRow[field.fieldname] || '#FFFFFF' }"
+                        ></div>
+                        <span>{{ selectedRow[field.fieldname] || '-' }}</span>
+                      </div>
+                    </template>
+                    
+                    <template v-else-if="field.fieldtype === 'Date' || field.fieldtype === 'Datetime'">
+                      {{ formatDate(selectedRow[field.fieldname]) || '-' }}
+                    </template>
 
-              <template v-else-if="field.fieldtype === 'Currency' || field.fieldtype === 'Float'">
-                <div class="text-blue-800 font-medium">
-                  {{ formatNumber(selectedRow[field.fieldname]) }}
-                </div>
-              </template>
-              
-              <template v-else-if="field.fieldtype === 'Small Text'">
-                <div class="text-blue-800 font-medium whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm">
-                  {{ selectedRow[field.fieldname] }}
-                </div>
-              </template>
-              
-              <template v-else-if="field.fieldtype === 'Link'">
-                <div class="text-blue-800 font-medium">
-                  {{ selectedRow[field.fieldname] }}
-                </div>
-              </template>
-              
-              <template v-else>
-                <div class="text-blue-800 font-medium">
-                  {{ selectedRow[field.fieldname] || '-' }}
+                    <template v-else-if="field.fieldtype === 'Currency' || field.fieldtype === 'Float'">
+                      {{ selectedRow[field.fieldname] ? formatNumber(selectedRow[field.fieldname]) : '-' }}
+                    </template>
+                    
+                    <template v-else-if="field.fieldtype === 'Small Text' || field.fieldtype === 'Text' || field.fieldtype === 'Long Text'">
+                      <div class="whitespace-pre-wrap bg-gray-50 p-2 rounded-md text-sm">
+                        {{ selectedRow[field.fieldname] || '-' }}
+                      </div>
+                    </template>
+                    
+                    <template v-else>
+                      {{ selectedRow[field.fieldname] || '-' }}
+                    </template>
+                  </div>
                 </div>
               </template>
             </div>
           </div>
-        </div>
-        
-        <div class="px-4 py-3 bg-gray-50 flex justify-end border-t">
-          <button 
-            @click="showRowDetails = false" 
-            class="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Close
-          </button>
+          
+          <div class="px-4 py-3 bg-gray-50 flex justify-end border-t">
+            <button 
+              @click="showRowDetails = false" 
+              class="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  </teleport>
+    </teleport>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   rows: {
     type: Array,
-    default: () => []
+    default: () => [],
+    required: true
   },
   fields: {
     type: Array,
@@ -305,30 +265,37 @@ const props = defineProps({
 // State
 const isCollapsed = ref(false);
 const showRowDetails = ref(false);
-const selectedRow = ref({});
+const selectedRow = ref(null);
 const selectedRowIndex = ref(-1);
 
 // Computed properties
 const allFields = computed(() => {
-  return props.fields.filter(field => 
-    !field.hidden && 
-    ![
-      "name",
-      "owner",
-      "creation",
-      "modified",
-      "modified_by",
-      "docstatus",
-      "idx",
-      "parent",
-      "parentfield",
-      "parenttype",
-    ].includes(field.fieldname)
-  ).sort((a, b) => (a.idx || 0) - (b.idx || 0));
+  // If fields are provided, use them (filtering out system fields)
+  if (props.fields && props.fields.length > 0) {
+    return props.fields.filter(field => 
+      !field.hidden && 
+      ![
+        "name", "owner", "creation", "modified", 
+        "modified_by", "docstatus", "idx",
+        "parent", "parentfield", "parenttype"
+      ].includes(field.fieldname)
+    ).sort((a, b) => (a.idx || 0) - (b.idx || 0));
+  }
+  
+  // If no fields provided but we have rows, infer fields from first row
+  if (props.rows.length > 0 && typeof props.rows[0] === 'object') {
+    return Object.keys(props.rows[0]).map(fieldname => ({
+      fieldname,
+      label: fieldname.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim(),
+      fieldtype: 'Data' // Default type
+    }));
+  }
+  
+  return [];
 });
 
 const visibleFields = computed(() => {
-  // Get fields marked for list view, or take first 4-5 fields
+  // Get fields marked for list view
   const inListViewFields = allFields.value.filter(field => 
     field.in_list_view === true || 
     field.in_list_view === 1 || 
@@ -346,19 +313,16 @@ const visibleFields = computed(() => {
 // Methods
 const getColumnStyle = (field) => {
   const style = {};
-  
   if (field.fieldtype === 'Check') style.width = '80px';
   else if (field.fieldtype === 'Int' || field.fieldtype === 'Float') style.width = '100px';
   else if (field.fieldtype === 'Date') style.width = '120px';
   else if (field.fieldtype === 'Color') style.width = '120px';
   else if (field.fieldtype === 'Small Text') style.minWidth = '200px';
-  
   return style;
 };
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
-  
   try {
     return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric',
@@ -372,7 +336,6 @@ const formatDate = (dateString) => {
 
 const formatNumber = (value) => {
   if (value === undefined || value === null || value === '') return '';
-  
   try {
     return parseFloat(value).toLocaleString(undefined, {
       minimumFractionDigits: 2,
@@ -384,25 +347,19 @@ const formatNumber = (value) => {
 };
 
 const formatFieldValue = (field, value) => {
-  if (value === undefined || value === null || value === '') return '';
-  
+  if (value === undefined || value === null || value === '') return '-';
   switch (field.fieldtype) {
-    case 'Check':
-      return value ? 'Yes' : 'No';
+    case 'Check': return value ? 'Yes' : 'No';
     case 'Date':
-    case 'Datetime':
-      return formatDate(value);
+    case 'Datetime': return formatDate(value);
     case 'Currency':
     case 'Float':
-    case 'Percent':
-      return formatNumber(value);
-    default:
-      return value;
+    case 'Percent': return formatNumber(value);
+    default: return value;
   }
 };
 
 const getPrimaryColumnValue = (row) => {
-  // Use the first visible field as primary column
   if (visibleFields.value.length > 0) {
     const field = visibleFields.value[0];
     return formatFieldValue(field, row[field.fieldname]);
@@ -411,7 +368,6 @@ const getPrimaryColumnValue = (row) => {
 };
 
 const getSecondaryColumnValue = (row) => {
-  // Use the second visible field as secondary column
   if (visibleFields.value.length > 1) {
     const field = visibleFields.value[1];
     return formatFieldValue(field, row[field.fieldname]);
@@ -420,7 +376,6 @@ const getSecondaryColumnValue = (row) => {
 };
 
 const getPreviewFields = () => {
-  // Return fields 3 and 4 for preview (skip first two which are already shown)
   if (visibleFields.value.length > 2) {
     return visibleFields.value.slice(2, 4);
   }
@@ -428,39 +383,15 @@ const getPreviewFields = () => {
 };
 
 const openRowDetails = (row, index) => {
-  console.log('Opening row details for index:', index, 'Row data:', row);
-  
-  // Create a deep copy of the row to avoid reactivity issues
-  selectedRow.value = JSON.parse(JSON.stringify(row));
+  console.log('Opening row details:', row);
+  selectedRow.value = { ...row }; // Create a shallow copy
   selectedRowIndex.value = index;
   showRowDetails.value = true;
   
-  // Debug: Log the fields and selected row to help diagnose issues
-  console.log('Available fields:', allFields.value);
+  // Debug logs
+  console.log('All fields:', allFields.value);
   console.log('Selected row data:', selectedRow.value);
 };
-
-// Watch for changes in rows prop
-watch(() => props.rows, (newRows) => {
-  // If the selected row is no longer in the rows array, close the details modal
-  if (showRowDetails.value && selectedRowIndex.value >= 0) {
-    const rowStillExists = newRows.some((row, index) => index === selectedRowIndex.value);
-    if (!rowStillExists) {
-      showRowDetails.value = false;
-    }
-  }
-}, { deep: true });
-
-// Watch for changes in fields prop
-watch(() => props.fields, (newFields) => {
-  console.log('Fields updated:', newFields);
-}, { deep: true });
-
-onMounted(() => {
-  console.log('EnhancedTableView mounted');
-  console.log('Initial rows:', props.rows);
-  console.log('Initial fields:', props.fields);
-});
 </script>
 
 <style scoped>
@@ -475,5 +406,13 @@ onMounted(() => {
     margin-right: -1rem;
     width: calc(100% + 2rem);
   }
+}
+
+.max-h-\[90vh\] {
+  max-height: 90vh;
+}
+
+.max-h-\[calc\(90vh-4rem\)\] {
+  max-height: calc(90vh - 4rem);
 }
 </style>

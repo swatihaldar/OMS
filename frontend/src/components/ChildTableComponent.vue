@@ -85,7 +85,7 @@
                   :style="getColumnStyle(field)">
                 {{ field.label }}
               </th>
-              <th v-if="!isReadOnly" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24 sticky right-0 bg-gray-50">
                 Actions
               </th>
             </tr>
@@ -97,58 +97,69 @@
                   :style="getColumnStyle(field)">
                 <!-- Different display formats based on field type -->
                 <template v-if="field.fieldtype === 'Check'">
-                  <span v-if="row[field.fieldname]" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <svg class="-ml-0.5 mr-1 h-3 w-3 text-green-400" fill="currentColor" viewBox="0 0 8 8">
-                      <circle cx="4" cy="4" r="3" />
-                    </svg>
-                    Yes
-                  </span>
-                  <span v-else class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    <svg class="-ml-0.5 mr-1 h-3 w-3 text-gray-400" fill="currentColor" viewBox="0 0 8 8">
-                      <circle cx="4" cy="4" r="3" />
-                    </svg>
-                    No
-                  </span>
-                </template>
-                <template v-else-if="field.fieldtype === 'Link'">
-                  <span class="text-blue-600">{{ getLinkDisplayValue(field, row[field.fieldname]) }}</span>
-                </template>
-                <template v-else-if="field.fieldtype === 'Date' || field.fieldtype === 'Datetime'">
-                  {{ formatDate(row[field.fieldname]) }}
-                </template>
-                <template v-else-if="field.fieldtype === 'Small Text'">
-                  <div class="whitespace-pre-line max-h-20 overflow-y-auto">{{ row[field.fieldname] }}</div>
-                </template>
-                <template v-else-if="field.fieldtype === 'Color' && row[field.fieldname]">
                   <div class="flex items-center">
-                    <div class="h-4 w-4 rounded mr-1" :style="{ backgroundColor: row[field.fieldname] || '#FFFFFF' }"></div>
-                    <span>{{ row[field.fieldname] }}</span>
+                    <span 
+                      class="relative flex items-center justify-center h-5 w-5 rounded-full border-2 transition-all"
+                      :class="{
+                        'border-blue-600 bg-blue-600': isChecked(row[field.fieldname]),
+                        'border-gray-300': !isChecked(row[field.fieldname])
+                      }"
+                    >
+                      <!-- Inner circle (visible when checked) -->
+                      <span 
+                        v-if="isChecked(row[field.fieldname])"
+                        class="h-2.5 w-2.5 rounded-full bg-white"
+                      ></span>
+                    </span>
                   </div>
                 </template>
+                <template v-else-if="field.fieldtype === 'Link'">
+                  <span v-if="row[field.fieldname]" class="text-blue-600">{{ getLinkDisplayValue(field, row[field.fieldname]) }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
+                </template>
+                <template v-else-if="field.fieldtype === 'Date' || field.fieldtype === 'Datetime'">
+                  <span v-if="row[field.fieldname]">{{ formatDate(row[field.fieldname]) }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
+                </template>
+                <template v-else-if="field.fieldtype === 'Small Text'">
+                  <div v-if="row[field.fieldname]" class="whitespace-pre-line max-h-20 overflow-y-auto">{{ row[field.fieldname] }}</div>
+                  <span v-else class="text-gray-400 italic">—</span>
+                </template>
+                <template v-else-if="field.fieldtype === 'Color'">
+                  <div v-if="row[field.fieldname]" class="flex items-center">
+                    <div class="h-4 w-4 rounded mr-1" :style="{ backgroundColor: row[field.fieldname] }"></div>
+                    <span>{{ row[field.fieldname] }}</span>
+                  </div>
+                  <span v-else class="text-gray-400 italic">—</span>
+                </template>
                 <template v-else-if="field.fieldtype === 'Currency' || field.fieldtype === 'Float'">
-                  <span class="font-medium">{{ formatNumber(row[field.fieldname]) }}</span>
+                  <span v-if="row[field.fieldname] !== undefined && row[field.fieldname] !== null && row[field.fieldname] !== ''" class="font-medium">{{ formatNumber(row[field.fieldname]) }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </template>
                 <template v-else>
-                  {{ row[field.fieldname] }}
+                  <span v-if="row[field.fieldname] !== undefined && row[field.fieldname] !== null && row[field.fieldname] !== ''">{{ row[field.fieldname] }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </template>
               </td>
-              <td v-if="!isReadOnly" class="px-4 py-3 text-sm text-right whitespace-nowrap" @click.stop>
-                <button @click="viewRow(index)" class="text-gray-600 hover:text-gray-800 mr-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </button>
-                <button @click="editRow(index)" class="text-blue-600 hover:text-blue-800 mr-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button @click="deleteRow(index)" class="text-red-600 hover:text-red-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-5 0h10" />
-                  </svg>
-                </button>
+              <td class="px-4 py-3 text-sm text-right whitespace-nowrap sticky right-0 bg-white" @click.stop>
+                <div class="flex justify-end space-x-2">
+                  <button @click="viewRow(index)" class="text-gray-600 hover:text-gray-800 p-1 rounded-full hover:bg-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </button>
+                  <button @click="editRow(index)" class="text-blue-600 hover:text-blue-800 p-1 rounded-full hover:bg-blue-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button @click="deleteRow(index)" class="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v10M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3m-5 0h10" />
+                    </svg>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -212,7 +223,8 @@
                     @blur="closeLinkDropdownDelayed(field.fieldname)"
                   />
                   <div v-else class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                    {{ getLinkDisplayValue(field, currentRow[field.fieldname]) || 'Not set' }}
+                    <span v-if="currentRow[field.fieldname]">{{ getLinkDisplayValue(field, currentRow[field.fieldname]) }}</span>
+                    <span v-else class="text-gray-400 italic">—</span>
                   </div>
 
                   <!-- Enhanced Dropdown with better display -->
@@ -243,18 +255,48 @@
                   </div>
                 </div>
 
-                <!-- Checkbox fields - Fixed styling -->
+                <!-- Checkbox fields - Circular styling -->
                 <div v-else-if="field.fieldtype === 'Check'" class="flex items-center">
-                  <input 
-                    v-if="modalMode !== 'view' && !isFieldReadOnly(field)"
-                    v-model="currentRow[field.fieldname]"
-                    type="checkbox"
-                    class="custom-checkbox h-5 w-5 text-blue-600 focus:ring-blue-500 rounded-full"
-                  />
-                  <div v-else class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                    {{ currentRow[field.fieldname] ? 'Yes' : 'No' }}
+                  <div v-if="modalMode !== 'view' && !isFieldReadOnly(field)" class="flex items-center">
+                    <!-- Hidden actual checkbox -->
+                    <input
+                      v-model="currentRow[field.fieldname]"
+                      type="checkbox"
+                      class="absolute opacity-0 w-0 h-0"
+                    />
+                    <!-- Custom circular checkbox -->
+                    <span 
+                      @click="toggleCheckbox(field.fieldname)"
+                      class="relative flex items-center justify-center h-5 w-5 rounded-full border-2 transition-all cursor-pointer"
+                      :class="{
+                        'border-blue-600 bg-blue-600': isChecked(currentRow[field.fieldname]),
+                        'border-gray-300': !isChecked(currentRow[field.fieldname])
+                      }"
+                    >
+                      <!-- Inner circle (visible when checked) -->
+                      <span 
+                        v-if="isChecked(currentRow[field.fieldname])"
+                        class="h-2.5 w-2.5 rounded-full bg-white"
+                      ></span>
+                    </span>
+                    <span class="ml-2 text-sm text-gray-700">{{ field.label }}</span>
                   </div>
-                  <span v-if="modalMode !== 'view' && !isFieldReadOnly(field)" class="ml-2 text-sm text-gray-700">{{ field.label }}</span>
+                  <div v-else class="p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-center">
+                    <span 
+                      class="relative flex items-center justify-center h-5 w-5 rounded-full border-2 transition-all mr-2"
+                      :class="{
+                        'border-blue-600 bg-blue-600': isChecked(currentRow[field.fieldname]),
+                        'border-gray-300': !isChecked(currentRow[field.fieldname])
+                      }"
+                    >
+                      <!-- Inner circle (visible when checked) -->
+                      <span 
+                        v-if="isChecked(currentRow[field.fieldname])"
+                        class="h-2.5 w-2.5 rounded-full bg-white"
+                      ></span>
+                    </span>
+                    {{ isChecked(currentRow[field.fieldname]) ? 'Yes' : 'No' }}
+                  </div>
                 </div>
 
                 <!-- Select fields -->
@@ -263,6 +305,7 @@
                   v-model="currentRow[field.fieldname]"
                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
+                  <option value="">Select an option</option>
                   <option 
                     v-for="option in getSelectOptions(field)" 
                     :key="option" 
@@ -272,7 +315,8 @@
                   </option>
                 </select>
                 <div v-else-if="field.fieldtype === 'Select'" class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                  {{ currentRow[field.fieldname] || 'Not set' }}
+                  <span v-if="currentRow[field.fieldname]">{{ currentRow[field.fieldname] }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </div>
 
                 <!-- Date fields -->
@@ -283,7 +327,8 @@
                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
                 <div v-else-if="field.fieldtype === 'Date'" class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                  {{ formatDate(currentRow[field.fieldname]) || 'Not set' }}
+                  <span v-if="currentRow[field.fieldname]">{{ formatDate(currentRow[field.fieldname]) }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </div>
 
                 <!-- Datetime fields -->
@@ -294,7 +339,8 @@
                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
                 <div v-else-if="field.fieldtype === 'Datetime'" class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                  {{ formatDate(currentRow[field.fieldname]) || 'Not set' }}
+                  <span v-if="currentRow[field.fieldname]">{{ formatDate(currentRow[field.fieldname]) }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </div>
 
                 <!-- Color fields -->
@@ -313,7 +359,8 @@
                 </div>
                 <div v-else-if="field.fieldtype === 'Color'" class="p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-center">
                   <div v-if="currentRow[field.fieldname]" class="h-4 w-4 rounded mr-2" :style="{ backgroundColor: currentRow[field.fieldname] }"></div>
-                  {{ currentRow[field.fieldname] || 'Not set' }}
+                  <span v-if="currentRow[field.fieldname]">{{ currentRow[field.fieldname] }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </div>
 
                 <!-- Text area fields -->
@@ -324,7 +371,8 @@
                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 ></textarea>
                 <div v-else-if="field.fieldtype === 'Small Text' || field.fieldtype === 'Long Text'" class="p-2 bg-gray-50 rounded-lg border border-gray-200 whitespace-pre-line">
-                  {{ currentRow[field.fieldname] || 'Not set' }}
+                  <span v-if="currentRow[field.fieldname]">{{ currentRow[field.fieldname] }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </div>
 
                 <!-- Number fields -->
@@ -336,7 +384,8 @@
                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
                 <div v-else-if="field.fieldtype === 'Int' || field.fieldtype === 'Float' || field.fieldtype === 'Currency' || field.fieldtype === 'Percent'" class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                  {{ formatNumber(currentRow[field.fieldname]) || 'Not set' }}
+                  <span v-if="currentRow[field.fieldname] !== undefined && currentRow[field.fieldname] !== null && currentRow[field.fieldname] !== ''">{{ formatNumber(currentRow[field.fieldname]) }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </div>
 
                 <!-- Default text input -->
@@ -347,7 +396,8 @@
                   class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
                 <div v-else class="p-2 bg-gray-50 rounded-lg border border-gray-200">
-                  {{ currentRow[field.fieldname] || 'Not set' }}
+                  <span v-if="currentRow[field.fieldname] !== undefined && currentRow[field.fieldname] !== null && currentRow[field.fieldname] !== ''">{{ currentRow[field.fieldname] }}</span>
+                  <span v-else class="text-gray-400 italic">—</span>
                 </div>
               </div>
             </template>
@@ -740,6 +790,16 @@ const fetchLinkFieldOptions = async () => {
   }
 };
 
+// Helper function to check if a value is checked (handles different checkbox value formats)
+const isChecked = (value) => {
+  return value === true || value === 1 || value === '1' || value === 'Yes';
+};
+
+// Toggle checkbox value
+const toggleCheckbox = (fieldname) => {
+  currentRow.value[fieldname] = !isChecked(currentRow.value[fieldname]);
+};
+
 const getColumnStyle = (field) => {
   const style = {};
   if (field.fieldtype === 'Check') style.width = '80px';
@@ -755,7 +815,7 @@ const formatFieldValue = (field, value) => {
   
   switch (field.fieldtype) {
     case 'Check':
-      return value ? 'Yes' : 'No';
+      return isChecked(value) ? 'Yes' : 'No';
     case 'Link':
       return getLinkDisplayValue(field, value);
     case 'Date':

@@ -299,13 +299,14 @@
 
                           <!-- Table fields -->
                           <div v-else-if="field.fieldtype === 'Table'">
-  <EnhancedTableView
-    :rows="record[field.fieldname] || []"
-    :fields="getChildTableFields(field)"
-    :label="field.label"
-    :isCollapsible="true"
-  />
-</div>
+                            <EnhancedTableView
+                              :rows="record[field.fieldname] || []"
+                              :fields="getVisibleChildTableFields(field)"
+                              :label="field.label"
+                              :isCollapsible="true"
+                            />
+                          </div>
+
 
                           <div
                             v-else-if="field.fieldtype === 'Table' && (!record[field.fieldname] || record[field.fieldname].length === 0)"
