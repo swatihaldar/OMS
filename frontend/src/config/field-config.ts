@@ -1,24 +1,30 @@
 interface DoctypeFieldConfig {
   hiddenFields: string[]
   readonlyFields: string[]
-  hiddenViewFields: string[] // Fields to hide in detail view
+  hiddenViewFields: string[]
 }
 
 interface FieldConfigMap {
   [doctype: string]: DoctypeFieldConfig
 }
 
-// Default configuration for all doctypes
+
 const defaultConfig: DoctypeFieldConfig = {
   hiddenFields: [],
   readonlyFields: [],
   hiddenViewFields: [],
 }
 
+
+const defaultHiddenViewFields = [
+  "name", "owner", "creation", "modified", 
+  "modified_by", "docstatus", "idx",
+  "parent", "parentfield", "parenttype"
+];
+
 // Specific configurations by doctype
 const fieldConfigs: FieldConfigMap = {
 
-  // Example: Task doctype configuration
   Task: {
     hiddenFields: ["tna_base_document_no","tna_planne","custom_tna_end_date","completed_by","completed_on","start","duration","custom_section_break_iahoa",
       "custom_task_resource","custom_total_amount","sb_depends_on","depends_on","depends_on_tasks","act_start_date","act_end_date","review_date",
@@ -30,55 +36,58 @@ const fieldConfigs: FieldConfigMap = {
     ],
   },
 
-  // Example: Customer doctype configuration
   Issue: {
     hiddenFields: [],
     readonlyFields: [],
     hiddenViewFields: [],
   },
 
-  // Add more doctype configurations as needed
+  // Child doctypes configuration
+  "Timesheet Detail": {
+    hiddenFields: ['activity_type'],
+    readonlyFields: [],
+    // Combine default hidden fields with custom hidden fields
+    hiddenViewFields: [...defaultHiddenViewFields, 'activity_type'],
+  },
+  
 }
 
-/**
- * Get field configuration for a specific doctype
- * @param doctype The doctype name
- * @returns Field configuration for the doctype
- */
+
 export function getFieldConfig(doctype: string): DoctypeFieldConfig {
-  return fieldConfigs[doctype] || defaultConfig
+  if (fieldConfigs[doctype]) {
+    return fieldConfigs[doctype];
+  }
+  
+  if (doctype && (doctype.includes("Detail") || doctype.includes("Item") || doctype.includes("Child"))) {
+    return {
+      hiddenFields: [],
+      readonlyFields: [],
+      hiddenViewFields: defaultHiddenViewFields,
+    };
+  }
+  
+  return defaultConfig;
 }
 
-/**
- * Check if a field should be hidden in the edit form
- * @param doctype The doctype name
- * @param fieldname The field name
- * @returns True if the field should be hidden
- */
+
 export function shouldHideField(doctype: string, fieldname: string): boolean {
-  const config = getFieldConfig(doctype)
-  return config.hiddenFields.includes(fieldname)
+  const config = getFieldConfig(doctype);
+  return config.hiddenFields.includes(fieldname);
 }
 
-/**
- * Check if a field should be hidden in the detail view
- * @param doctype The doctype name
- * @param fieldname The field name
- * @returns True if the field should be hidden in detail view
- */
+
 export function shouldHideViewField(doctype: string, fieldname: string): boolean {
-  const config = getFieldConfig(doctype)
-  return config.hiddenViewFields.includes(fieldname)
+
+  if (defaultHiddenViewFields.includes(fieldname) && 
+      (doctype.includes("Detail") || doctype.includes("Item") || doctype.includes("Child"))) {
+    return true;
+  }
+  
+  const config = getFieldConfig(doctype);
+  return config.hiddenViewFields.includes(fieldname);
 }
 
-/**
- * Check if a field should be readonly in the edit form
- * @param doctype The doctype name
- * @param fieldname The field name
- * @returns True if the field should be readonly
- */
 export function isReadonlyField(doctype: string, fieldname: string): boolean {
-  const config = getFieldConfig(doctype)
-  return config.readonlyFields.includes(fieldname)
+  const config = getFieldConfig(doctype);
+  return config.readonlyFields.includes(fieldname);
 }
-

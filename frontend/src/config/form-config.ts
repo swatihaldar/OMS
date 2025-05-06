@@ -137,6 +137,11 @@ export const HIDDEN_FIELDS_CONFIG: HiddenFieldsConfig = {
       "costing_amount",
       "base_costing_rate",
       "base_costing_amount",
+      "weightage",
+      "project_name",
+      "is_billable",
+      "sales_invoice",
+      
     ],
   },
 

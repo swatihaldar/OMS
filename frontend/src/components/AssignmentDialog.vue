@@ -26,16 +26,38 @@
 
         <!-- Dialog Content -->
         <div class="px-4 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+  
           <!-- Assign to me -->
           <div class="flex items-center p-3 bg-blue-50 rounded-lg">
-            <input 
-              type="checkbox" 
-              id="assign-to-me" 
-              v-model="assignToMe"
-              class="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-              @change="handleAssignToMeChange"
-            />
-            <label for="assign-to-me" class="ml-2 text-gray-700 font-medium">Assign to me</label>
+            <label class="inline-flex items-center cursor-pointer">
+              <!-- Hidden actual checkbox -->
+              <input 
+                type="checkbox" 
+                id="assign-to-me" 
+                v-model="assignToMe"
+                class="absolute opacity-0 w-0 h-0"
+                @change="handleAssignToMeChange"
+              />
+              <!-- Custom circular checkbox -->
+              <span 
+                class="relative flex items-center justify-center h-4 w-4 rounded-full border-2 transition-all"
+                :class="{
+                  'border-blue-600 bg-blue-600': assignToMe,
+                  'border-gray-300': !assignToMe
+                }"
+              >
+                <!-- Inner circle (visible when checked) -->
+                <svg 
+                  v-if="assignToMe"
+                  class="h-2 w-2 text-white"
+                  viewBox="0 0 8 8"
+                  fill="currentColor"
+                >
+                  <circle cx="4" cy="4" r="3" />
+                </svg>
+              </span>
+              <span class="ml-2 text-gray-700 font-medium">Assign to me</span>
+            </label>
             
             <div v-if="assignToMe && currentUser" class="ml-auto flex items-center">
               <div class="h-8 w-8 rounded-full overflow-hidden flex items-center justify-center bg-blue-600 text-white mr-2">

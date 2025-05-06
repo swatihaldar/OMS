@@ -50,7 +50,7 @@
         <button
           v-if="canDelete"
           @click="confirmDelete"
-          class="p-2 bg-red-50 text-red-500 rounded-full border border-red-500 hover:bg-red-50 transition-colors"
+          class="p-3 bg-red-50 text-red-500 rounded-full border border-red-500 hover:bg-red-50 transition-colors"
           title="Delete"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -304,6 +304,7 @@
                               :fields="getVisibleChildTableFields(field)"
                               :label="field.label"
                               :isCollapsible="true"
+                              :doctype="field.options"
                             />
                           </div>
 
