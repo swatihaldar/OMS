@@ -51,8 +51,8 @@
           
           <div v-if="getPreviewFields().length > 0" class="mt-1 text-sm text-gray-600 grid grid-cols-2 gap-2">
             <div v-for="(field, fieldIndex) in getPreviewFields()" :key="fieldIndex" class="flex items-center">
-              <span class="text-gray-500 mr-1">{{ field.label }}:</span>
-              <span>{{ formatFieldValue(field, row[field.fieldname]) }}</span>
+              <!-- <span class="text-gray-500 mr-1">{{ field.label }}:</span> -->
+              <!-- <span>{{ formatFieldValue(field, row[field.fieldname]) }}</span> -->
             </div>
           </div>
         </div>

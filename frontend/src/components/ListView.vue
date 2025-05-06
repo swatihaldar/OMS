@@ -86,7 +86,7 @@
       <div
         v-for="record in records"
         :key="record.name"
-        @click="$router.push(`/${doctypeRoute}/${record.name}`)"
+        @click="navigateToRecord(record)"
         class="bg-white rounded-xl shadow-md p-4 cursor-pointer hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 border border-transparent hover:border-blue-100"
       >
         <div class="flex justify-between items-start">
@@ -150,8 +150,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, watch, onUnmounted, onBeforeUnmount } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   PlusIcon,
   ExclamationTriangleIcon,
@@ -198,6 +198,7 @@ const props = defineProps({
 const emit = defineEmits(['record-click']);
 
 const router = useRouter();
+const route = useRoute();
 const records = ref([]);
 const loading = ref(true);
 const formFields = ref([]);
@@ -222,6 +223,44 @@ const pageSize = ref(20);
 const totalPages = ref(1);
 const totalRecords = ref(0);
 const allRecords = ref([]); // Store all fetched records
+
+// State persistence key
+const getStateKey = () => `${props.doctype.toLowerCase()}_list_state`;
+
+// Save filter state to localStorage
+const saveFilterState = () => {
+  const state = {
+    searchQuery: searchQuery.value,
+    statusFilter: statusFilter.value,
+    customFilters: customFilters.value,
+    dateFilters: dateFilters.value,
+    sortOption: sortOption.value,
+    assignmentFilter: assignmentFilter.value,
+    currentPage: currentPage.value
+  };
+  localStorage.setItem(getStateKey(), JSON.stringify(state));
+};
+
+// Load filter state from localStorage
+const loadFilterState = () => {
+  try {
+    const savedState = localStorage.getItem(getStateKey());
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      searchQuery.value = state.searchQuery || '';
+      statusFilter.value = state.statusFilter || '';
+      customFilters.value = state.customFilters || {};
+      dateFilters.value = state.dateFilters || {};
+      sortOption.value = state.sortOption || 'creation desc';
+      assignmentFilter.value = state.assignmentFilter || '';
+      currentPage.value = state.currentPage || 1;
+      return true;
+    }
+  } catch (error) {
+    console.error('Error loading filter state:', error);
+  }
+  return false;
+};
 
 // Computed properties
 const doctypeRoute = computed(() => {
@@ -614,6 +653,9 @@ const fetchAllRecords = async () => {
     // Apply pagination locally
     updateDisplayedRecords();
     
+    // Save the current filter state
+    saveFilterState();
+    
   } catch (error) {
     console.error(`Error fetching ${props.doctype} records:`, error);
     error.value = `Failed to load ${props.doctype} records`;
@@ -768,7 +810,15 @@ const formatDate = (dateString) => {
   });
 };
 
-// List view methods
+// Navigate to record detail view with state preservation
+const navigateToRecord = (record) => {
+  // Save current filter state before navigation
+  saveFilterState();
+  
+  // Navigate to the detail view
+  router.push(`/${doctypeRoute.value}/${record.name}`);
+};
+
 // List view methods
 const handleSearch = () => {
   clearTimeout(window.searchTimeout);
@@ -788,9 +838,11 @@ const handleSearch = () => {
       // If search is cleared, restore original records
       updateDisplayedRecords();
     }
+    
+    // Save the current filter state
+    saveFilterState();
   }, 300);
 };
-
 
 const resetFilters = () => {
   statusFilter.value = '';
@@ -806,6 +858,10 @@ const resetFilters = () => {
   
   showFilterPanel.value = false;
   currentPage.value = 1;
+  
+  // Clear saved filter state
+  localStorage.removeItem(getStateKey());
+  
   fetchAllRecords();
 };
 
@@ -819,6 +875,7 @@ const prevPage = () => {
   if (currentPage.value > 1) {
     currentPage.value--;
     updateDisplayedRecords();
+    saveFilterState();
   }
 };
 
@@ -826,6 +883,7 @@ const nextPage = () => {
   if (currentPage.value < totalPages.value) {
     currentPage.value++;
     updateDisplayedRecords();
+    saveFilterState();
   }
 };
 
@@ -844,7 +902,6 @@ const handleClickOutside = (event) => {
   }
 };
 
-
 onMounted(async () => {
   console.log(`ListView component mounted for ${props.doctype}`);
   
@@ -855,6 +912,11 @@ onMounted(async () => {
     await checkPermissions();
     await fetchDoctypeFields();
     await fetchUserPermissions();
+    
+    // Try to load saved filter state
+    const stateLoaded = loadFilterState();
+    console.log(`Filter state loaded: ${stateLoaded}`);
+    
     await fetchAssignedRecords(); // Fetch assigned records
     await fetchAllRecords();
   } catch (error) {
@@ -877,6 +939,9 @@ watch(() => props.doctype, async () => {
   allRecords.value = [];
   currentPage.value = 1;
   
+  // Clear saved filter state when doctype changes
+  localStorage.removeItem(getStateKey());
+  
   try {
     await checkPermissions();
     await fetchDoctypeFields();
@@ -894,6 +959,11 @@ watch(() => props.filters, () => {
   currentPage.value = 1;
   fetchAllRecords();
 }, { deep: true });
+
+// Save filter state before component is unmounted
+onBeforeUnmount(() => {
+  saveFilterState();
+});
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
