@@ -1,0 +1,1 @@
+import{_ as e}from"./GenerateUI-DHEUxYdu.js";import{c as t,o as s}from"./index-D-2YcNgo.js";const l={__name:"Timesheet",setup(o){return(a,r)=>(s(),t(e,{doctype:"Timesheet",titleField:"employee_name",listFields:["start_date","total_hours"],showOnlyOwnRecords:!1}))}};export{l as default};

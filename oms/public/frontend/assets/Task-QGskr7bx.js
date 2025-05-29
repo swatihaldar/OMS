@@ -1,1 +1,0 @@
-import{_ as t}from"./GenerateUI-DBf47VpG.js";import{c as e,o}from"./index-BWT8cemi.js";const i={__name:"Task",setup(a){return(s,c)=>(o(),e(t,{doctype:"Task",titleField:"subject",listFields:["status","project","priority","creation","allocated_to"]}))}};export{i as default};

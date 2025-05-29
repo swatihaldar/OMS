@@ -349,7 +349,7 @@ onMounted(async () => {
         const employee = employeeDataResponse.message[0];
         employeeData.value = employee;
         
-        // Initialize all fields with null values to ensure they appear in the UI
+      
         employeeDetailsFields.forEach(field => {
           employeeDetails.value[field.key] = null;
         });
@@ -358,7 +358,7 @@ onMounted(async () => {
           companyInfo.value[field.key] = null;
         });
         
-        // Populate employee details
+        // employee details
         employeeDetails.value = {
           ...employeeDetails.value,
           first_name: employee.first_name,
@@ -371,7 +371,7 @@ onMounted(async () => {
           status: employee.status
         };
         
-        // Populate company info
+        // company info
         companyInfo.value = {
           ...companyInfo.value,
           company: employee.company,
@@ -416,7 +416,7 @@ onMounted(async () => {
         if (contactDataResponse.message?.[0]) {
           const contact = contactDataResponse.message[0];
           
-          // Populate contact info
+          //contact info
           contactInfo.value = {
             ...contactInfo.value,
             email: contact.email_id,
@@ -450,7 +450,6 @@ const formatDate = (dateString) => {
   }
 };
 
-// Clean up event listener
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });

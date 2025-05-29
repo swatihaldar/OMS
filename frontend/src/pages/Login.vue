@@ -123,7 +123,7 @@
     
     <!-- Footer -->
     <div class="mt-8 text-center text-xs text-gray-500">
-      <p>© {{ new Date().getFullYear() }} OMS.</p>
+      <p>© {{ new Date().getFullYear() }} Visitor Management </p>
     </div>
 
     <!-- Forgot Password Modal -->

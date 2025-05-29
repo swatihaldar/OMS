@@ -124,6 +124,29 @@
             </div>
           </router-link>
           
+          <!-- Location Manager (only for users with specific roles) -->
+          <router-link 
+            v-if="hasLocationAccess"
+            to="/location-manager" 
+            class="group flex items-center px-4 py-2.5 mx-2 my-1 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200" 
+            active-class="bg-white bg-opacity-20 text-white"
+            @mouseenter="animateIcon('location')"
+            @click="isMobile && toggleSidebar()"
+          >
+            <div class="flex items-center w-full">
+              <div 
+                class="flex items-center justify-center h-8 w-8 rounded-md bg-white bg-opacity-10 text-white group-hover:bg-opacity-20 transition-all duration-200"
+                :class="{ 'animate-bounce': activeIcon === 'location' }"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <span class="ml-3 font-medium">Location Manager</span>
+            </div>
+          </router-link>
+          
           <!-- Issues with submenu -->
           <div class="relative my-1">
             <button 
@@ -279,27 +302,6 @@
               <span class="ml-3 font-medium">My Profile</span>
             </div>
           </router-link>
-          
-          <!-- Settings -->
-          <!-- <router-link 
-            to="/settings" 
-            class="group flex items-center px-4 py-2.5 mx-2 my-1 rounded-lg text-white hover:bg-white hover:bg-opacity-10 transition-all duration-200" 
-            active-class="bg-white bg-opacity-20 text-white"
-            @mouseenter="animateIcon('settings')"
-          >
-            <div class="flex items-center w-full">
-              <div 
-                class="flex items-center justify-center h-8 w-8 rounded-md bg-white bg-opacity-10 text-white group-hover:bg-opacity-20 transition-colors duration-200"
-                :class="{ 'animate-pulse': activeIcon === 'settings' }"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <span class="ml-3 font-medium">Settings</span>
-            </div>
-          </router-link> -->
         </nav>
       </div>
       
@@ -327,6 +329,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 
 const props = defineProps({
   isOpen: {
@@ -343,6 +346,7 @@ const emit = defineEmits(['toggle']);
 
 const route = useRoute();
 const userData = ref(null);
+const userRoles = ref([]);
 const isLoading = ref(true);
 const searchQuery = ref('');
 const activeIcon = ref(null);
@@ -358,6 +362,12 @@ const isIssueActive = computed(() => {
 
 const isTaskActive = computed(() => {
   return route.path.startsWith('/task');
+});
+
+// Check if user has location access
+const hasLocationAccess = computed(() => {
+  const locationRoles = ['System Manager', 'Location Manager', 'Manager'];
+  return userRoles.value.some(role => locationRoles.includes(role));
 });
 
 // Toggle submenu open/closed
@@ -407,6 +417,7 @@ const fetchUserData = async () => {
 
     if (data.message) {
       userData.value = data.message;
+      userRoles.value = data.message.roles || [];
       
       // If user_id is not provided, try to extract it from email
       if (!userData.value.user_id && userData.value.email) {
@@ -424,6 +435,7 @@ const fetchUserData = async () => {
       email: 'user@example.com',
       user_id: 'USR001'
     };
+    userRoles.value = ['Employee'];
   } finally {
     // Delay turning off loading state for smoother transition
     setTimeout(() => {

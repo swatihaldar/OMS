@@ -3,13 +3,14 @@ import { createRouter, createWebHistory } from "vue-router"
 import Home from "@/pages/Home.vue"
 import Login from "@/pages/Login.vue"
 import Profile from "@/pages/Profile.vue"
+import LocationManager from "@/pages/LocationManager.vue"
 
 const universalDoctypes = [
   { name: "Issue", path: "issue" },
-  { name: "Task", path: "task" }, 
-  { name: "Project", path: "project" }, 
-  { name: "Timesheet", path: "timesheet"},
-  { name: "Employee", path: "employee"},
+  { name: "Task", path: "task" },
+  { name: "Project", path: "project" },
+  { name: "Timesheet", path: "timesheet" },
+  { name: "Employee", path: "employee" },
   // Add more doctypes here as needed
 ]
 
@@ -29,6 +30,15 @@ const routes = [
     path: "/profile",
     name: "Profile",
     component: Profile,
+  },
+  {
+    path: "/location-manager",
+    name: "LocationManager",
+    component: LocationManager,
+    meta: {
+      requiresAuth: true,
+      requiredRoles: ["System Manager", "Location Manager", "Manager"],
+    },
   },
 ]
 
@@ -77,16 +87,37 @@ router.beforeEach(async (to, from, next) => {
     return next("/")
   }
 
+  // Check role-based access
+  if (to.meta.requiredRoles) {
+    const userRoles = await getUserRoles()
+    const hasRequiredRole = to.meta.requiredRoles.some((role) => userRoles.includes(role))
+
+    if (!hasRequiredRole) {
+      // Redirect to home if user doesn't have required role
+      return next({ path: "/", query: { error: "insufficient_permissions" } })
+    }
+  }
+
   next()
 })
 
 async function checkAuthStatus() {
   try {
-    const response = await fetch('/api/method/frappe.auth.get_logged_user')
+    const response = await fetch("/api/method/frappe.auth.get_logged_user")
     const data = await response.json()
-    return data.message && data.message !== 'Guest'
+    return data.message && data.message !== "Guest"
   } catch (error) {
     return false
+  }
+}
+
+async function getUserRoles() {
+  try {
+    const response = await fetch("/api/method/oms.api.get_current_user_info")
+    const data = await response.json()
+    return data.message?.roles || []
+  } catch (error) {
+    return []
   }
 }
 
