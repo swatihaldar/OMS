@@ -1,0 +1,1 @@
+import{_ as t}from"./GenerateUI-CJPwq6qy.js";import{c as e,o}from"./index-zw0dkMdh.js";const i={__name:"Task",setup(s){return(r,a)=>(o(),e(t,{doctype:"Task",titleField:"subject",listFields:["status","project","priority","creation","allocated_to"],showOnlyOwnRecords:!0}))}};export{i as default};

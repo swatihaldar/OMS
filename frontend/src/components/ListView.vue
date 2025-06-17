@@ -207,8 +207,8 @@ const linkFieldOptions = ref({});
 const userPermissions = ref([]);
 const canCreate = ref(false);
 const currentUser = ref(null);
-const assignedRecords = ref({}); // Map of record names to assignment status
-const assignedUsers = ref({}); // Map of record names to assigned users
+const assignedRecords = ref({}); 
+const assignedUsers = ref({}); 
 
 // List view state
 const searchQuery = ref('');
@@ -216,13 +216,13 @@ const statusFilter = ref('');
 const customFilters = ref({});
 const dateFilters = ref({});
 const sortOption = ref('creation desc');
-const assignmentFilter = ref(''); // New filter for assignments
+const assignmentFilter = ref(''); 
 const showFilterPanel = ref(false);
 const currentPage = ref(1);
 const pageSize = ref(20);
 const totalPages = ref(1);
 const totalRecords = ref(0);
-const allRecords = ref([]); // Store all fetched records
+const allRecords = ref([]);
 
 // State persistence key
 const getStateKey = () => `${props.doctype.toLowerCase()}_list_state`;
@@ -639,7 +639,7 @@ const fetchAllRecords = async () => {
       fields: ['*'],
       filters: filters,
       orFilters: orFilters.length > 0 ? orFilters : (searchConditions.length > 0 ? searchConditions : undefined),
-      limit: 1000, // Set a high limit to get all records
+      limit: 1000, 
       orderBy: sortOption.value
     });
     
@@ -960,7 +960,7 @@ watch(() => props.filters, () => {
   fetchAllRecords();
 }, { deep: true });
 
-// Save filter state before component is unmounted
+
 onBeforeUnmount(() => {
   saveFilterState();
 });
@@ -998,9 +998,9 @@ onUnmounted(() => {
   }
 }
 
-/* Add hover animation */
 .hover\:-translate-y-1:hover {
   transform: translateY(-4px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
+
 </style>

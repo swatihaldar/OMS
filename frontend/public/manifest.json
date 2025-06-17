@@ -1,7 +1,7 @@
 {
   "name": "OMS",
   "short_name": "OMS",
-  "description": "Order Management System build with Frappe",
+  "description": "Order Management System",
   "start_url": "/oms/",
   "display": "standalone",
   "scope": "/oms/",

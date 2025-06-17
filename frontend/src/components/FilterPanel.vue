@@ -429,8 +429,9 @@ const applyFilters = () => {
   top: 100%;
   margin-top: 0.5rem;
   width: 16rem; /* w-64 */
-  z-index: 9999; /* Much higher z-index to ensure it's above everything */
+  z-index: 10050; /* Higher than bottom nav (z-30) but below modal overlays */
 }
+
 
 .filter-dropdown {
   width: 100%;
@@ -441,12 +442,13 @@ const applyFilters = () => {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: 3.5rem; /* Height of bottom nav */
     top: auto;
     width: 100%;
     margin: 0;
-    z-index: 9999; /* Much higher z-index */
+    z-index: 40;
   }
+
   
   .filter-dropdown {
     max-height: 80vh;

@@ -428,6 +428,17 @@ onMounted(async () => {
   animation: gradientAnimation 15s ease infinite;
 }
 
+.map-container {
+  position: relative;
+  z-index: 10; 
+}
+
+
+.location-map-container {
+  position: relative;
+  z-index: 10;
+}
+
 @keyframes gradientAnimation {
   0% {
     background-position: 0% 50%;

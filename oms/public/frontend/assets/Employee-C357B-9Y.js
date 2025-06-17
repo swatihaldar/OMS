@@ -1,0 +1,1 @@
+import{_ as e}from"./GenerateUI-CJPwq6qy.js";import{c as t,o}from"./index-zw0dkMdh.js";const m={__name:"Employee",setup(s){return(a,p)=>(o(),t(e,{doctype:"Employee",titleField:"employee",listFields:["status","department"]}))}};export{m as default};

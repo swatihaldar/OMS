@@ -11,39 +11,32 @@
       :filters="filters"
     />
     
-    <!-- Detail View -->
-    <DetailView
-      v-else-if="mode === 'detail'"
+    <!-- Form View (Add/Edit Mode) -->
+    <FormView
+      v-else
       :doctype="doctype"
-      :recordId="recordId"
-      :titleField="titleField"
-      :detailFields="detailFields"
-      @record-deleted="handleRecordDeleted"
-      @record-updated="handleRecordUpdated"
-    />
-    
-    <!-- Form View (New/Edit) -->
-    <FormHandler
-      v-else-if="mode === 'form'"
-      :doctype="doctype"
-      :recordId="recordId"
-      :defaultValues="enhancedDefaultValues"
-      :titleField="titleField"
-      @form-submitted="handleFormSubmitted"
-      @cancel="handleFormCancel"
+      :docname="recordId"
+      :fields="processedFields"
+      :modelValue="formData"
+      :mode="mode"
+      :showAttachmentView="true"
+      @update:modelValue="updateFormData"
+      @validateForm="validateForm"
     />
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import ListView from '@/components/ListView.vue';
-import DetailView from '@/components/DetailView.vue';
-import FormHandler from '@/components/FormHandler.vue';
-import api from '@/utils/api';
-// import { usePermissions } from '@/composables/usePermissions';
-import { usePermissions } from '../composables/usePermissions';
+import { computed, ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import ListView from '@/components/ListView.vue'
+import FormView from '@/components/FormView.vue'
+import api from '@/utils/api'
+import { getHiddenFields } from '@/config/form-config'
+import { usePermissions } from '../composables/usePermissions'
+
+const route = useRoute()
+const router = useRouter()
 
 const props = defineProps({
   doctype: {
@@ -78,15 +71,14 @@ const props = defineProps({
     type: Object,
     default: () => ({})
   }
-});
+})
 
-const emit = defineEmits(['record-deleted', 'form-submitted', 'record-updated']);
+const emit = defineEmits(['record-deleted', 'form-submitted', 'record-updated'])
 
-const route = useRoute();
-const router = useRouter();
-const doctypeFields = ref([]);
+const doctypeFields = ref([])
+const formData = ref({})
+const loading = ref(true)
 
-// Use the permissions composable
 const { 
   currentUser, 
   canCreate, 
@@ -95,125 +87,195 @@ const {
   canDelete, 
   userPermissions, 
   checkPermissions 
-} = usePermissions();
-
-// Fetch doctype fields on component mount
-onMounted(async () => {
-  try {
-    // Check permissions for this doctype
-    await checkPermissions(props.doctype);
-    
-    const result = await api.fetchDoctypeFields(props.doctype);
-    if (Array.isArray(result)) {
-      doctypeFields.value = result;
-    } else if (result && result.fields) {
-      doctypeFields.value = result.fields;
-    }
-    
-    console.log(`Loaded ${doctypeFields.value.length} fields for ${props.doctype}`);
-    console.log(`Permission check: canCreate=${canCreate.value}, canRead=${canRead.value}, canWrite=${canWrite.value}, canDelete=${canDelete.value}`);
-    
-    // If user doesn't have read permission and we're in list view, show an error or redirect
-    if (!canRead.value && mode.value === 'list') {
-      console.error(`User doesn't have permission to read ${props.doctype}`);
-      // You could redirect to a permission denied page or show an error message
-    }
-    
-    // If user doesn't have create permission and we're in new form view, redirect to list
-    if (!canCreate.value && mode.value === 'form' && !recordId.value) {
-      console.error(`User doesn't have permission to create ${props.doctype}`);
-      router.push(`/${doctypeRoute.value}`);
-    }
-  } catch (error) {
-    console.error(`Error fetching fields for ${props.doctype}:`, error);
-  }
-});
-
-// Watch for changes in doctype to update permissions
-watch(() => props.doctype, async () => {
-  await checkPermissions(props.doctype);
-  
-  try {
-    const result = await api.fetchDoctypeFields(props.doctype);
-    if (Array.isArray(result)) {
-      doctypeFields.value = result;
-    } else if (result && result.fields) {
-      doctypeFields.value = result.fields;
-    }
-  } catch (error) {
-    console.error(`Error fetching fields for ${props.doctype}:`, error);
-  }
-});
+} = usePermissions()
 
 const doctypeRoute = computed(() => {
-  return props.doctype.toLowerCase().replace(/\s+/g, '-');
-});
+  return props.doctype.toLowerCase().replace(/\s+/g, '-')
+})
 
 const mode = computed(() => {
-  const path = route.path;
-  const baseRoute = `/${doctypeRoute.value}`;
+  const path = route.path
+  const baseRoute = `/${doctypeRoute.value}`
   
   if (path === baseRoute) {
-    return 'list';
+    return 'list'
   } else if (path === `${baseRoute}/new`) {
-    return 'form';
-  } else if (path.includes('/edit/')) {
-    return 'form';
+    return 'add'
   } else {
-    return 'detail';
+    return 'edit'
   }
-});
+})
 
 const recordId = computed(() => {
   if (route.path === `/${doctypeRoute.value}/new`) {
-    return null;
-  } else if (route.path.includes('/edit/')) {
-    return route.params.id;
+    return null
   } else {
-    return route.params.id;
+    return route.params.id
   }
-});
+})
+
+const hiddenFieldsList = computed(() => {
+  return getHiddenFields(props.doctype)
+})
+
+const processedFields = computed(() => {
+  const systemFields = ['name', 'owner', 'creation', 'modified', 'modified_by', 'docstatus', 'idx']
+  
+  return doctypeFields.value
+    .filter(field => {
+      if (!field || !field.fieldname) return false
+      if (systemFields.includes(field.fieldname)) return false
+      if (field.hidden === 1 || field.hidden === true || field.hidden === '1') return false
+      if (hiddenFieldsList.value.includes(field.fieldname)) return false
+      return true
+    })
+    .sort((a, b) => (a.idx || 0) - (b.idx || 0))
+    .map(field => ({
+      ...field,
+      fieldname: field.fieldname || '',
+      fieldtype: field.fieldtype || 'Data',
+      label: field.label || field.fieldname || '',
+      reqd: field.reqd || 0,
+      hidden: field.hidden || 0,
+      read_only: field.read_only || 0,
+      options: field.options || '',
+      default: field.default || '',
+      description: field.description || '',
+      idx: field.idx || 0,
+      allow_in_quick_entry: field.allow_in_quick_entry || 0,
+      collapsible: field.collapsible || 0,
+    }))
+})
 
 const enhancedDefaultValues = computed(() => {
-  const defaults = { ...props.defaultValues };
+  const defaults = { 
+    doctype: props.doctype,
+    ...props.defaultValues 
+  }
   
-  // Apply user permissions as default values for new records
+  // Apply user permissions
   userPermissions.value.forEach(permission => {
-    const linkFields = doctypeFields.value.filter(field => 
+    const linkFields = processedFields.value.filter(field => 
       field.fieldtype === 'Link' && field.options === permission.allow
-    );
+    )
     
     linkFields.forEach(field => {
       if (!defaults[field.fieldname]) {
-        defaults[field.fieldname] = permission.for_value;
+        defaults[field.fieldname] = permission.for_value
       }
-    });
-  });
+    })
+  })
   
-  return defaults;
-});
+  return defaults
+})
 
-const handleRecordDeleted = (id) => {
-  emit('record-deleted', id);
-  router.push(`/${doctypeRoute.value}`);
-};
-
-const handleRecordUpdated = (record) => {
-  emit('record-updated', record);
-};
-
-const handleFormSubmitted = (record) => {
-  emit('form-submitted', record);
-  router.push(`/${doctypeRoute.value}/${record.name}`);
-};
-
-const handleFormCancel = () => {
-  if (recordId.value) {
-    // If editing, go back to detail view
-    router.push(`/${doctypeRoute.value}/${recordId.value}`);
-  } else {
-    // If creating new, go back to list view
-    router.push(`/${doctypeRoute.value}`);
+const fetchDoctypeFields = async () => {
+  try {
+    loading.value = true
+    console.log(`Fetching doctype fields for ${props.doctype}...`)
+    
+    const result = await api.fetchDoctypeFields(props.doctype)
+    
+    if (result && result.fields) {
+      doctypeFields.value = result.fields
+      console.log(`Successfully fetched ${result.fields.length} fields for ${props.doctype}`)
+    } else if (Array.isArray(result)) {
+      doctypeFields.value = result
+      console.log(`Successfully fetched ${result.length} fields for ${props.doctype}`)
+    } else {
+      throw new Error('Invalid fields data in response')
+    }
+    
+    // Initialize form data for new records
+    if (mode.value === 'add') {
+      initializeFormData()
+    } else if (mode.value === 'edit' && recordId.value) {
+      await loadExistingRecord()
+    }
+    
+  } catch (error) {
+    console.error(`Error fetching fields for ${props.doctype}:`, error)
+  } finally {
+    loading.value = false
   }
-};
+}
+
+const initializeFormData = () => {
+  const initialData = { ...enhancedDefaultValues.value }
+  
+  // Set default values from field definitions
+  processedFields.value.forEach(field => {
+    if (field.default && !initialData[field.fieldname]) {
+      if (field.fieldtype === 'Date' && field.default === 'Today') {
+        initialData[field.fieldname] = new Date().toISOString().split('T')[0]
+      } else if (field.fieldtype === 'Check') {
+        initialData[field.fieldname] = field.default === '1' || field.default === true
+      } else {
+        initialData[field.fieldname] = field.default
+      }
+    }
+  })
+  
+  formData.value = initialData
+  console.log('Initialized form data:', formData.value)
+}
+
+const loadExistingRecord = async () => {
+  try {
+    console.log(`Loading existing record: ${props.doctype} ${recordId.value}`)
+    
+    const data = await api.fetchDocument(props.doctype, recordId.value)
+    formData.value = { ...data, doctype: props.doctype }
+    
+    console.log('Loaded record data:', formData.value)
+  } catch (error) {
+    console.error(`Error loading ${props.doctype} ${recordId.value}:`, error)
+  }
+}
+
+const updateFormData = (newData) => {
+  formData.value = { ...newData }
+}
+
+const validateForm = () => {
+  console.log('Form validation triggered')
+  // Add any custom validation logic here
+}
+
+const checkPermissionsAndFetchFields = async () => {
+  await checkPermissions(props.doctype)
+  await fetchDoctypeFields()
+}
+
+onMounted(() => {
+  checkPermissionsAndFetchFields()
+})
+
+watch(() => props.doctype, (newDoctype) => {
+  if (newDoctype) {
+    checkPermissionsAndFetchFields()
+  }
+})
+
+watch(
+  () => mode.value,
+  (newMode) => {
+    if (newMode === 'add') {
+      initializeFormData()
+    } else if (newMode === 'edit' && recordId.value) {
+      loadExistingRecord()
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => recordId.value,
+  (newRecordId) => {
+    if (newRecordId && mode.value === 'edit') {
+      loadExistingRecord()
+    }
+  },
+  { immediate: true }
+)
 </script>

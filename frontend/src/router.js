@@ -56,9 +56,10 @@ universalDoctypes.forEach((doctype) => {
     component: () => import(`@/pages/${doctype.name}.vue`),
   })
 
+  // Modified: Direct to edit mode instead of detail view
   routes.push({
     path: `/${doctype.path}/:id`,
-    name: `${doctype.name}Detail`,
+    name: `${doctype.name}Edit`, // Changed from Detail to Edit
     component: () => import(`@/pages/${doctype.name}.vue`),
   })
 })

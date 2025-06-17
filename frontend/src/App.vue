@@ -37,7 +37,7 @@
       </div>
       
       <!-- Bottom nav - only visible on mobile -->
-      <div v-if="!hideNavBars" class="sticky bottom-0 z-30 md:hidden">
+      <div v-if="!hideNavBars" class="sticky bottom-0 z-20 md:hidden">
         <BottomNav />
       </div>
     </div>

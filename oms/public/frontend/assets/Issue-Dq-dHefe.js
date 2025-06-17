@@ -1,0 +1,1 @@
+import{_ as t}from"./GenerateUI-CJPwq6qy.js";import{c as e,o as s}from"./index-zw0dkMdh.js";const i={__name:"Issue",setup(o){return(c,a)=>(s(),e(t,{doctype:"Issue",titleField:"subject",listFields:["status","project","creation","custom_client_status","allocated_to","raised_by"],showOnlyOwnRecords:!0}))}};export{i as default};
