@@ -9,7 +9,7 @@
     
     <!-- Sidebar -->
     <div 
-      class="fixed top-0 left-0 h-full z-40 transition-all duration-300 ease-in-out shadow-xl"
+      class="fixed top-0 left-0 h-full z-50 transition-all duration-300 ease-in-out shadow-xl"
       :class="[
         isMobile ? 'w-72' : 'w-64 lg:w-72',
         isOpen || !isMobile ? 'translate-x-0' : '-translate-x-full'
@@ -71,7 +71,7 @@
       </div>
       
       <!-- search bar  -->
-      <div class="px-4 py-3 bg-gradient-to-b from-purple-800 to-purple-900 border-b border-purple-700">
+      <!-- <div class="px-4 py-3 bg-gradient-to-b from-purple-800 to-purple-900 border-b border-purple-700">
         <div class="relative group">
           <input 
             type="text" 
@@ -98,7 +98,7 @@
             </svg>
           </button>
         </div>
-      </div>
+      </div> -->
       
       <!-- Menu items  -->
       <div class="bg-gradient-to-b from-purple-900 to-blue-900 h-[calc(100%-160px)] overflow-y-auto">

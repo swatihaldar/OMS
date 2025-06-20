@@ -435,6 +435,7 @@ const applyFilters = () => {
 
 .filter-dropdown {
   width: 100%;
+  
 }
 
 @media (max-width: 640px) {

@@ -1,10 +1,10 @@
 <template>
   <div class="mb-6">
     <!-- Label and description section -->
-    <div class="flex items-center mb-2">
-      <!-- <label class="block text-sm font-medium text-gray-700">
+    <div v-if="label" class="flex items-center mb-2">
+      <label class="block text-sm font-medium text-gray-700">
         {{ label }} <span v-if="required" class="text-red-500">*</span>
-      </label> -->
+      </label>
       <Tooltip v-if="description" :text="description" class="ml-1">
         <FeatherIcon name="help-circle" class="h-4 w-4 text-gray-400" />
       </Tooltip>
@@ -39,6 +39,7 @@
           @click="openAddRowModal" 
           variant="solid"
           size="sm"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
         >
           <FeatherIcon name="plus" class="h-4 w-4 mr-2" />
           Add {{ label }}
@@ -47,23 +48,71 @@
     </div>
 
     <!-- Table Display -->
-    <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div v-else class="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
       <!-- Table Header -->
-      <div class="flex items-center justify-between p-4 border-b border-gray-200">
+      <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
         <h3 class="text-lg font-medium text-gray-900">{{ label }}</h3>
         <Button 
           v-if="!isReadOnly" 
           @click.stop="openAddRowModal" 
           variant="solid"
           size="sm"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center"
         >
           <FeatherIcon name="plus" class="h-4 w-4 mr-1" />
-          Add
+          <span class="hidden sm:inline">Add</span>
         </Button>
       </div>
 
-      <!-- Table Content -->
-      <div class="overflow-x-auto">
+      <!-- Mobile Card View -->
+      <div class="block md:hidden">
+        <div v-for="(row, index) in modelValue" :key="index" class="border-b border-gray-100 last:border-b-0">
+          <div class="p-4 hover:bg-gray-50 cursor-pointer" @click="viewRow(index)">
+            <div class="space-y-2">
+              <div v-for="field in listViewFields.slice(0, 3)" :key="field.fieldname" class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-600">{{ field.label }}:</span>
+                <span class="text-sm text-gray-900">
+                  <template v-if="field.fieldtype === 'Check'">
+                    <div class="flex items-center">
+                      <Checkbox :modelValue="isChecked(row[field.fieldname])" :disabled="true" />
+                    </div>
+                  </template>
+                  <template v-else-if="field.fieldtype === 'Link'">
+                    <span v-if="row[field.fieldname]" class="text-blue-600">{{ getLinkDisplayValue(field, row[field.fieldname]) }}</span>
+                    <span v-else class="text-gray-400 italic">—</span>
+                  </template>
+                  <template v-else-if="field.fieldtype === 'Date' || field.fieldtype === 'Datetime'">
+                    <span v-if="row[field.fieldname]">{{ formatDate(row[field.fieldname]) }}</span>
+                    <span v-else class="text-gray-400 italic">—</span>
+                  </template>
+                  <template v-else-if="field.fieldtype === 'Currency' || field.fieldtype === 'Float'">
+                    <span v-if="row[field.fieldname] !== undefined && row[field.fieldname] !== null && row[field.fieldname] !== ''" class="font-medium">{{ formatNumber(row[field.fieldname]) }}</span>
+                    <span v-else class="text-gray-400 italic">—</span>
+                  </template>
+                  <template v-else>
+                    <span v-if="row[field.fieldname] !== undefined && row[field.fieldname] !== null && row[field.fieldname] !== ''">{{ row[field.fieldname] }}</span>
+                    <span v-else class="text-gray-400 italic">—</span>
+                  </template>
+                </span>
+              </div>
+            </div>
+            <div class="flex justify-end mt-3" @click.stop>
+              <Button 
+                @click="deleteRow(index)" 
+                variant="ghost"
+                size="sm"
+                theme="red"
+                class="p-2"
+              >
+                <FeatherIcon name="trash-2" class="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Desktop Table View -->
+      <div class="hidden md:block overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -123,6 +172,7 @@
                     variant="ghost"
                     size="sm"
                     theme="red"
+                    class="p-2"
                   >
                     <FeatherIcon name="trash-2" class="h-4 w-4" />
                   </Button>
@@ -146,114 +196,128 @@
       </template>
       
       <template #body-content>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <template v-for="field in visibleModalFields" :key="field.fieldname">
-            <!-- Section Break -->
-            <div v-if="field.fieldtype === 'Section Break'" class="col-span-1 md:col-span-2 border-t border-gray-200 pt-6 mt-2">
-              <h4 v-if="field.label" class="text-base font-medium text-gray-900 mb-4">{{ field.label }}</h4>
-            </div>
-
-            <!-- Column Break -->
-            <div v-else-if="field.fieldtype === 'Column Break'" class="hidden md:block">
-              <!-- Column break marker -->
-            </div>
-
-            <!-- Regular fields -->
-            <div v-else class="col-span-1" :class="{'md:col-span-2': field.fieldtype === 'Text Editor' || field.fieldtype === 'Long Text' || field.fieldtype === 'Small Text'}">
-              <label class="block text-sm font-medium text-gray-700 mb-1">
-                {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
-              </label>
-              
-              <!-- Link Field -->
-              <Autocomplete
-                v-if="field.fieldtype === 'Link'"
-                :options="getFilteredLinkOptions(field)"
-                :modelValue="getLinkDisplayValue(field, currentRow[field.fieldname])"
-                :placeholder="`Select ${field.label}`"
-                :disabled="modalMode === 'view' || isFieldReadOnly(field)"
-                @update:modelValue="(val) => handleLinkSelect(field, val)"
-                @update:query="(query) => handleLinkSearch(field, query)"
-                class="w-full"
-              />
-
-              <!-- Select Field -->
-              <Select
-                v-else-if="field.fieldtype === 'Select'"
-                :options="getSelectOptions(field)"
-                :modelValue="currentRow[field.fieldname]"
-                :placeholder="`Select ${field.label}`"
-                :disabled="modalMode === 'view' || isFieldReadOnly(field)"
-                @update:modelValue="(val) => currentRow[field.fieldname] = val"
-                class="w-full"
-              />
-
-              <!-- Checkbox Field -->
-              <div v-else-if="field.fieldtype === 'Check'" class="flex items-center">
-                <Checkbox
-                  :modelValue="currentRow[field.fieldname]"
-                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
-                  @update:modelValue="(val) => currentRow[field.fieldname] = val"
-                  class="mr-2"
-                />
-                <span class="text-sm text-gray-700">{{ field.label }}</span>
+        <div class="max-h-[70vh] overflow-y-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <template v-for="field in visibleModalFields" :key="field.fieldname">
+              <!-- Section Break -->
+              <div v-if="field.fieldtype === 'Section Break'" class="col-span-1 md:col-span-2 border-t border-gray-200 pt-6 mt-2">
+                <h4 v-if="field.label" class="text-base font-medium text-gray-900 mb-4">{{ field.label }}</h4>
               </div>
 
-              <!-- Date Field -->
-              <Input
-                v-else-if="field.fieldtype === 'Date'"
-                type="date"
-                :modelValue="currentRow[field.fieldname]"
-                :placeholder="`Select ${field.label}`"
-                :disabled="modalMode === 'view' || isFieldReadOnly(field)"
-                @update:modelValue="(val) => currentRow[field.fieldname] = val"
-                class="w-full"
-              />
+              <!-- Column Break -->
+              <div v-else-if="field.fieldtype === 'Column Break'" class="hidden md:block">
+                <!-- Column break marker -->
+              </div>
 
-              <!-- Datetime Field -->
-              <DateTimePicker
-                v-else-if="field.fieldtype === 'Datetime'"
-                :modelValue="currentRow[field.fieldname]"
-                :placeholder="`Select ${field.label}`"
-                :disabled="modalMode === 'view' || isFieldReadOnly(field)"
-                @update:modelValue="(val) => currentRow[field.fieldname] = val"
-                class="w-full"
-              />
+              <!-- Regular fields -->
+              <div v-else class="col-span-1" :class="{'md:col-span-2': field.fieldtype === 'Text Editor' || field.fieldtype === 'Long Text' || field.fieldtype === 'Small Text'}">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  {{ field.label }} <span v-if="field.reqd" class="text-red-500">*</span>
+                </label>
+                
+                <!-- Link Field -->
+                <Autocomplete
+                  v-if="field.fieldtype === 'Link'"
+                  :options="getFilteredLinkOptions(field)"
+                  :modelValue="getLinkSelectedOption(field)"
+                  :placeholder="`Select ${field.label}`"
+                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                  @update:modelValue="(val) => handleLinkSelect(field, val)"
+                  @update:query="(query) => handleLinkSearch(field, query)"
+                  class="w-full"
+                />
 
-              <!-- Text Editor -->
-              <TextEditor
-                v-else-if="field.fieldtype === 'Text Editor'"
-                :content="currentRow[field.fieldname] || ''"
-                :placeholder="`Enter ${field.label}`"
-                :editable="modalMode !== 'view' && !isFieldReadOnly(field)"
-                @change="(content) => currentRow[field.fieldname] = content"
-                class="w-full"
-              />
+                <!-- Select Field -->
+                <Select
+                  v-else-if="field.fieldtype === 'Select'"
+                  :options="getSelectOptions(field)"
+                  :modelValue="currentRow[field.fieldname]"
+                  :placeholder="`Select ${field.label}`"
+                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                  @update:modelValue="(val) => currentRow[field.fieldname] = val"
+                  class="w-full"
+                />
 
-              <!-- Long Text / Small Text -->
-              <Input
-                v-else-if="['Long Text', 'Small Text'].includes(field.fieldtype)"
-                type="textarea"
-                :modelValue="currentRow[field.fieldname]"
-                :placeholder="`Enter ${field.label}`"
-                :disabled="modalMode === 'view' || isFieldReadOnly(field)"
-                :rows="field.fieldtype === 'Long Text' ? 4 : 2"
-                @update:modelValue="(val) => currentRow[field.fieldname] = val"
-                class="w-full"
-              />
+                <!-- Checkbox Field -->
+                <div v-else-if="field.fieldtype === 'Check'" class="flex items-center">
+                  <Checkbox
+                    :modelValue="currentRow[field.fieldname]"
+                    :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                    @update:modelValue="(val) => currentRow[field.fieldname] = val"
+                    class="mr-2"
+                  />
+                  <span class="text-sm text-gray-700">{{ field.label }}</span>
+                </div>
 
-              <!-- Default Input -->
-              <Input
-                v-else
-                :modelValue="currentRow[field.fieldname]"
-                :placeholder="`Enter ${field.label}`"
-                :disabled="modalMode === 'view' || isFieldReadOnly(field)"
-                @update:modelValue="(val) => currentRow[field.fieldname] = val"
-                class="w-full"
-              />
+                <!-- Date Field -->
+                <Input
+                  v-else-if="field.fieldtype === 'Date'"
+                  type="date"
+                  :modelValue="currentRow[field.fieldname]"
+                  :placeholder="`Select ${field.label}`"
+                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                  @update:modelValue="(val) => currentRow[field.fieldname] = val"
+                  class="w-full"
+                />
 
-              <ErrorMessage v-if="fieldErrors[field.fieldname]" :message="fieldErrors[field.fieldname]" class="mt-1" />
-            </div>
-          </template>
+                <!-- Datetime Field -->
+                <DateTimePicker
+                  v-else-if="field.fieldtype === 'Datetime'"
+                  :modelValue="currentRow[field.fieldname]"
+                  :placeholder="`Select ${field.label}`"
+                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                  @update:modelValue="(val) => currentRow[field.fieldname] = val"
+                  class="w-full"
+                />
+
+                <!-- Text Editor -->
+                <TextEditor
+                  v-else-if="field.fieldtype === 'Text Editor'"
+                  :content="currentRow[field.fieldname] || ''"
+                  :placeholder="`Enter ${field.label}`"
+                  :editable="modalMode !== 'view' && !isFieldReadOnly(field)"
+                  @change="(content) => currentRow[field.fieldname] = content"
+                  class="w-full"
+                />
+
+                <!-- Long Text / Small Text -->
+                <Input
+                  v-else-if="['Long Text', 'Small Text'].includes(field.fieldtype)"
+                  type="textarea"
+                  :modelValue="currentRow[field.fieldname]"
+                  :placeholder="`Enter ${field.label}`"
+                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                  :rows="field.fieldtype === 'Long Text' ? 4 : 2"
+                  @update:modelValue="(val) => currentRow[field.fieldname] = val"
+                  class="w-full"
+                />
+
+                <!-- Number Fields -->
+                <Input
+                  v-else-if="['Int', 'Float', 'Currency', 'Percent'].includes(field.fieldtype)"
+                  type="number"
+                  :modelValue="currentRow[field.fieldname]"
+                  :placeholder="`Enter ${field.label}`"
+                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                  :step="field.fieldtype === 'Int' ? '1' : '0.01'"
+                  @update:modelValue="(val) => currentRow[field.fieldname] = val"
+                  class="w-full"
+                />
+
+                <!-- Default Input -->
+                <Input
+                  v-else
+                  :modelValue="currentRow[field.fieldname]"
+                  :placeholder="`Enter ${field.label}`"
+                  :disabled="modalMode === 'view' || isFieldReadOnly(field)"
+                  @update:modelValue="(val) => currentRow[field.fieldname] = val"
+                  class="w-full"
+                />
+
+                <ErrorMessage v-if="fieldErrors[field.fieldname]" :message="fieldErrors[field.fieldname]" class="mt-1" />
+              </div>
+            </template>
+          </div>
         </div>
       </template>
       
@@ -487,7 +551,10 @@ const fetchLinkFieldOptions = async () => {
       const titleField = metaData.message?.title_field || "name";
       
       // Determine safe fields to request
-      const fieldsToRequest = ["name", titleField];
+      const fieldsToRequest = ["name"];
+      if (titleField !== "name") {
+        fieldsToRequest.push(titleField);
+      }
       
       // Try to fetch with the title field
       const response = await fetch("/api/method/frappe.client.get_list", {
@@ -634,6 +701,14 @@ const getFilteredLinkOptions = (field) => {
     : options;
 };
 
+const getLinkSelectedOption = (field) => {
+  const value = currentRow.value[field.fieldname];
+  if (!value) return null;
+  
+  const options = getFilteredLinkOptions(field);
+  return options.find(opt => opt.value === value) || null;
+};
+
 const handleLinkSearch = async (field, query) => {
   linkSearchQueries.value[field.fieldname] = query;
   
@@ -650,8 +725,8 @@ const handleLinkSearch = async (field, query) => {
   }
 };
 
-const handleLinkSelect = (field, value) => {
-  currentRow.value[field.fieldname] = value;
+const handleLinkSelect = (field, option) => {
+  currentRow.value[field.fieldname] = option?.value || null;
 };
 
 const getSelectOptions = (field) => {
@@ -781,17 +856,25 @@ const saveRow = async () => {
 
     // Convert numeric fields to numbers
     visibleModalFields.value.forEach(field => {
-  if (['Int', 'Float', 'Currency', 'Percent'].includes(field.fieldtype)) {
-    const value = currentRow.value[field.fieldname];
-    if (value !== undefined && value !== null && value !== '') {
-      currentRow.value[field.fieldname] = parseFloat(value);
-    }
-  }
-});
+      if (['Int', 'Float', 'Currency', 'Percent'].includes(field.fieldtype)) {
+        const value = currentRow.value[field.fieldname];
+        if (value !== undefined && value !== null && value !== '') {
+          currentRow.value[field.fieldname] = parseFloat(value);
+        }
+      }
+    });
 
     const newValue = [...(props.modelValue || [])];
     const rowToSave = { ...currentRow.value };
+    
+    // Clean up the row data - remove system fields that shouldn't be saved
     delete rowToSave.parent;
+    delete rowToSave.name; // Let the server generate this
+    delete rowToSave.owner;
+    delete rowToSave.creation;
+    delete rowToSave.modified;
+    delete rowToSave.modified_by;
+    delete rowToSave.docstatus;
 
     if (modalMode.value === 'edit') {
       newValue[currentRowIndex.value] = rowToSave;
@@ -852,10 +935,24 @@ watch(() => currentRow.value.project, async (newProject) => {
   
   if (taskField) {
     taskOptions.value = await fetchTasks(newProject);
+    // Clear current task selection if it doesn't belong to the new project
+    if (currentRow.value.task) {
+      const taskExists = taskOptions.value.find(t => t.value === currentRow.value.task);
+      if (!taskExists) {
+        currentRow.value.task = null;
+      }
+    }
   }
   
   if (issueField) {
     issueOptions.value = await fetchIssues(newProject);
+    // Clear current issue selection if it doesn't belong to the new project
+    if (currentRow.value.issue) {
+      const issueExists = issueOptions.value.find(i => i.value === currentRow.value.issue);
+      if (!issueExists) {
+        currentRow.value.issue = null;
+      }
+    }
   }
 });
 
@@ -917,5 +1014,16 @@ tr:hover {
   position: sticky;
   right: 0;
   z-index: 5;
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .md\:col-span-2 {
+    grid-column: span 1;
+  }
 }
 </style>

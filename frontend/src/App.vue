@@ -27,7 +27,7 @@
       ]"
     >
       <!-- Fixed navbar -->
-      <div v-if="!hideNavBars" class="sticky top-0 z-30 w-full">
+      <div v-if="!hideNavBars" class="sticky top-0 z-40 w-full">
         <NavBar />
       </div>
       

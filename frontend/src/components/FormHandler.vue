@@ -6,7 +6,7 @@
       <div class="px-4 py-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center min-w-0 flex-1">
-            <button @click.stop="handleCancel" class="mr-3 p-2 -ml-2 text-gray-600 hover:text-gray-800 transition-colors rounded-lg hover:bg-gray-100">
+            <button @click.stop="handleCancel" class="mr-3 p-2 ml-2 text-gray-600 hover:text-gray-800 transition-colors rounded-lg hover:bg-gray-100">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
               </svg>
@@ -1444,5 +1444,9 @@ button, .cursor-pointer {
 input, select, textarea {
   position: relative;
   z-index: 1;
+}
+
+.-ml-2 {
+    margin-left: 0.5rem;
 }
 </style>

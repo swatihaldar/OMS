@@ -3,16 +3,17 @@
     <!-- Fixed Header -->
     <div class="fixed top-0 left-0 right-0 z-30 bg-white shadow-sm border-b">
       <div class="px-4 py-3">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-3">
+          <!-- Left side: Back button and title -->
           <div class="flex items-center min-w-0 flex-1">
-            <Button variant="ghost" class="mr-3 p-2 -ml-2" @click="handleCancel">
+            <Button variant="ghost" class="mr-2 p-2 flex-shrink-0" @click="handleCancel">
               <FeatherIcon name="chevron-left" class="h-5 w-5" />
             </Button>
             <h1 class="text-lg font-semibold text-gray-900 truncate">{{ headerTitle }}</h1>
           </div>
           
-          <!-- Action buttons for edit mode -->
-          <div v-if="mode === 'edit' && docname" class="flex items-center gap-2 ml-3">
+          <!-- Right side: Action buttons -->
+          <div v-if="mode === 'edit' && docname" class="flex items-center gap-2 flex-shrink-0">
             <Button variant="ghost" @click="confirmDelete" class="p-2 text-red-600 hover:bg-red-50">
               <FeatherIcon name="trash-2" class="h-5 w-5" />
             </Button>
@@ -345,8 +346,9 @@ const quickEntryFields = ref([])
 const quickEntryData = ref({})
 const currentSectionNames = ref({})
 
-// Provide link field options to child components
+// Provide link field options and form data to child components
 provide('linkFieldOptions', linkFieldOptions)
+provide('formData', computed(() => props.modelValue))
 
 // Computed
 const formModel = computed({
@@ -503,7 +505,7 @@ const handleLinkSearch = async (data) => {
       })
       
       // Update the options for this field
-      linkFieldOptions.value[fieldname] = [
+      linkFieldOptions.value[fieldname] =  [
         ...searchResults,
         ...(linkFieldOptions.value[fieldname] || []).filter(
           existing => !searchResults.some(result => result.value === existing.value)
@@ -811,136 +813,6 @@ const fetchConnectedRecords = async () => {
   }
 }
 
-// const fetchLinkFieldOptions = async () => {
-//   const linkFields = processedFields.value.filter(field => field.fieldtype === 'Link')
-  
-//   for (const field of linkFields) {
-//     try {
-//       if (!field.options) continue
-      
-//       const metaResponse = await fetch("/api/method/frappe.client.get", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           doctype: "DocType",
-//           name: field.options,
-//           fields: ["title_field"]
-//         }),
-//         credentials: "include",
-//       })
-      
-//       const metaData = await metaResponse.json()
-//       const titleField = metaData.message?.title_field || "name"
-      
-//       const fieldsResponse = await fetch("/api/method/frappe.client.get_list", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           doctype: "DocField",
-//           fields: ["fieldname", "fieldtype"],
-//           filters: { parent: field.options },
-//           limit_page_length: 0
-//         }),
-//         credentials: "include",
-//       })
-      
-//       const fieldsData = await fieldsResponse.json()
-//       const fieldNames = fieldsData.message || []
-      
-//       const fieldsToFetch = new Set(["name", titleField, "creation"])
-      
-//       const commonNameFields = [
-//         "first_name", "last_name", "full_name",
-//         "project_name", "subject", "title",
-//         "customer_name", "employee_name"
-//       ]
-      
-//       commonNameFields.forEach(fieldName => {
-//         if (fieldNames.some(f => f.fieldname === fieldName)) {
-//           fieldsToFetch.add(fieldName)
-//         }
-//       })
-      
-//       if (fieldNames.some(f => f.fieldname === "status")) {
-//         fieldsToFetch.add("status")
-//       }
-      
-//       const response = await fetch("/api/method/frappe.client.get_list", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           doctype: field.options,
-//           fields: Array.from(fieldsToFetch),
-//           limit_page_length: 0,
-//           order_by: "creation desc"
-//         }),
-//         credentials: "include",
-//       })
-
-//       if (!response.ok) throw new Error(`Failed to fetch options for ${field.fieldname}`)
-
-//       const data = await response.json()
-
-//       if (data.message) {
-//         linkFieldOptions.value[field.fieldname] = data.message.map(item => {
-//           let label = item[titleField] || item.name
-          
-//           if (label === item.name) {
-//             if (item.first_name && item.last_name) {
-//               label = `${item.first_name} ${item.last_name}`.trim()
-//             } 
-//             else if (item.full_name) {
-//               label = item.full_name
-//             }
-//             else if (item.project_name) {
-//               label = item.project_name
-//             }
-//             else if (item.subject) {
-//               label = item.subject
-//             }
-//             else if (item.title) {
-//               label = item.title
-//             }
-//             else if (item.customer_name) {
-//               label = item.customer_name
-//             }
-//             else if (item.employee_name) {
-//               label = item.employee_name
-//             }
-//           }
-          
-//           return {
-//             value: item.name,
-//             label: label || item.name,
-//             description: item.name !== label ? `${item.name}` : undefined,
-//             creation: item.creation,
-//             ...(item.status && { status: item.status })
-//           }
-//         })
-//       }
-//     } catch (error) {
-//       console.error(`Error fetching options for ${field.fieldname}:`, error)
-//       const fallbackResponse = await fetch("/api/method/frappe.client.get_list", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           doctype: field.options,
-//           fields: ["name"],
-//           limit_page_length: 500,
-//         }),
-//         credentials: "include",
-//       })
-      
-//       const fallbackData = await fallbackResponse.json()
-//       linkFieldOptions.value[field.fieldname] = fallbackData.message?.map(item => ({
-//         value: item.name,
-//         label: item.name
-//       })) || []
-//     }
-//   }
-// }
-
-
 const fetchLinkFieldOptions = async () => {
   const linkFields = processedFields.value.filter(field => field.fieldtype === 'Link')
   
@@ -994,23 +866,23 @@ const fetchLinkFieldOptions = async () => {
       const data = await response.json()
 
       if (data.message) {
-      linkFieldOptions.value[field.fieldname] = data.message.map(item => {
-        // For Projects specifically
-        if (field.options === 'Project') {
-          return {
-            value: item.name, // Stores PROJ-0024
-            label: item.project_name, // Shows "Wave" in dropdown
-            description: item.name // Shows "PROJ-0024" as description
+        linkFieldOptions.value[field.fieldname] = data.message.map(item => {
+          // For Projects specifically
+          if (field.options === 'Project') {
+            return {
+              value: item.name, // Stores PROJ-0024
+              label: item.project_name, // Shows "Wave" in dropdown
+              description: item.name // Shows "PROJ-0024" as description
+            }
           }
-        }
-        // Default for other doctypes
-        return {
-          value: item.name,
-          label: item[titleField] || item.name,
-          description: item.name
-        }
-      })
-    }
+          // Default for other doctypes
+          return {
+            value: item.name,
+            label: item[titleField] || item.name,
+            description: item.name
+          }
+        })
+      }
     } catch (error) {
       console.error(`Error fetching options for ${field.fieldname}:`, error)
       // Fallback to basic names
@@ -1123,5 +995,12 @@ watch(() => processedFields.value, async () => {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Improved header spacing */
+@media (max-width: 640px) {
+  .flex.items-center.justify-between.gap-3 {
+    gap: 0.5rem;
+  }
 }
 </style>

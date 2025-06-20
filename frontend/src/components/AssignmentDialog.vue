@@ -427,14 +427,17 @@ const submitAssignment = async () => {
     
     if (result.message) {
       const newAssignment = {
-        name: result.message.name || Date.now().toString(),
-        allocated_to: assignmentData.value.assign_to,
-        allocated_to_fullname: assignableUsers.value.find(u => u.value === assignmentData.value.assign_to)?.fullName || assignmentData.value.assign_to,
-        user_image: assignableUsers.value.find(u => u.value === assignmentData.value.assign_to)?.image || null,
-        description: assignmentData.value.description,
-        priority: assignmentData.value.priority,
-        date: assignmentData.value.complete_by || null
-      };
+      name: result.message.name || Date.now().toString(),
+      allocated_to: assignmentData.value.assign_to,
+      allocated_to_fullname: assignableUsers.value.find(u => u.value === assignmentData.value.assign_to)?.fullName || 
+                            (assignToMe.value ? currentUser.value.fullName : assignmentData.value.assign_to),
+      user_image: assignableUsers.value.find(u => u.value === assignmentData.value.assign_to)?.image || 
+                  (assignToMe.value ? currentUser.value.image : null),
+      description: assignmentData.value.description,
+      priority: assignmentData.value.priority,
+      date: assignmentData.value.complete_by || null,
+      owner: currentUser.value.userId // Add owner information
+    };
       
       emit('assignment-added', newAssignment);
       closeDialog();

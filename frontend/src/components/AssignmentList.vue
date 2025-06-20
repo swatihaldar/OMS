@@ -271,7 +271,18 @@ const fetchCurrentUser = async () => {
     const data = await response.json();
     
     if (data.message) {
-      currentUser.value = data.message;
+      const userResponse = await fetch('/api/method/frappe.client.get', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          doctype: 'User',
+          name: data.message,
+          fields: ['name', 'full_name', 'user_image']
+        })
+      });
+      
+      const userData = await userResponse.json();
+      currentUser.value = userData.message;
     }
   } catch (error) {
     console.error('Error fetching current user:', error);
@@ -280,8 +291,8 @@ const fetchCurrentUser = async () => {
 
 const canRemove = (assignment) => {
   return currentUser.value && 
-    (assignment.owner === currentUser.value || 
-     assignment.allocated_to === currentUser.value);
+    (assignment.owner === currentUser.value.name || 
+     assignment.allocated_to === currentUser.value.name);
 };
 
 const removeAssignment = async (todoName) => {

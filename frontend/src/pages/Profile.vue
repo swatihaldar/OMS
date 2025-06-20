@@ -15,18 +15,18 @@
       <div class="bg-white mt-2 px-6 py-8 flex flex-col items-center rounded-lg shadow-sm">
         <div class="relative">
           <div class="h-28 w-28 rounded-full bg-gray-200 overflow-hidden shadow-md">
-            <img v-if="userData && userData.user_image" :src="getUserImage(userData.user_image)" :alt="userData.full_name" class="h-full w-full object-cover" />
+            <img v-if="currentUserData && currentUserData.user_image" :src="getUserImage(currentUserData.user_image)" :alt="currentUserData.full_name" class="h-full w-full object-cover" />
             <div v-else class="h-full w-full flex items-center justify-center bg-blue-100 text-blue-600 font-semibold text-3xl">
-              {{ getInitials(userData?.full_name) }}
+              {{ getInitials(currentUserData?.full_name) }}
             </div>
           </div>
         </div>
-        <h2 class="mt-4 text-2xl font-semibold">{{ userData?.full_name || 'User' }}</h2>
-        <p class="text-gray-600">{{ employeeData?.designation || 'No Designation' }}</p>
+        <h2 class="mt-4 text-2xl font-semibold">{{ currentUserData?.full_name || 'User' }}</h2>
+        <p class="text-gray-600">{{ currentEmployeeData?.designation || 'No Designation' }}</p>
         
         <div class="mt-4 flex items-center text-sm text-gray-500">
           <EnvelopeIcon class="h-4 w-4 mr-1" />
-          <span>{{ userData?.name || 'No Email' }}</span>
+          <span>{{ currentUserData?.name || 'No Email' }}</span>
         </div>
       </div>
 
@@ -171,8 +171,8 @@ import {
 } from '@heroicons/vue/24/outline';
 import BottomSheet from '../components/BottomSheet.vue';
 
-const userData = ref(null);
-const employeeData = ref(null);
+const currentUserData = ref(null);
+const currentEmployeeData = ref(null);
 const activeSheet = ref(null);
 const isMobile = ref(window.innerWidth < 768);
 const showLogoutConfirm = ref(false);
@@ -323,110 +323,128 @@ onMounted(async () => {
   window.addEventListener('resize', handleResize);
   
   try {
-    // Fetch user info
-    const userResponse = await fetch('/api/method/oms.api.get_current_user_info');
-    const userDataResponse = await userResponse.json();
+    // Fetch current logged-in user info
+    const userResponse = await fetch('/api/method/frappe.auth.get_logged_user');
+    const loggedUserData = await userResponse.json();
     
-    if (userDataResponse.message) {
-      userData.value = userDataResponse.message;
+    if (loggedUserData.message) {
+      const loggedUserEmail = loggedUserData.message;
       
-      // Fetch employee data
-      const employeeResponse = await fetch('/api/method/frappe.client.get_list', {
+      // Fetch user details for the logged-in user
+      const userDetailsResponse = await fetch('/api/method/frappe.client.get', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          doctype: 'Employee',
-          filters: { user_id: userData.value.name },
-          fields: ['*']
+          doctype: 'User',
+          name: loggedUserEmail
         }),
       });
       
-      const employeeDataResponse = await employeeResponse.json();
+      const userDetailsData = await userDetailsResponse.json();
       
-      if (employeeDataResponse.message?.[0]) {
-        const employee = employeeDataResponse.message[0];
-        employeeData.value = employee;
+      if (userDetailsData.message) {
+        currentUserData.value = userDetailsData.message;
         
-      
-        employeeDetailsFields.forEach(field => {
-          employeeDetails.value[field.key] = null;
-        });
-        
-        companyInfoFields.forEach(field => {
-          companyInfo.value[field.key] = null;
-        });
-        
-        // employee details
-        employeeDetails.value = {
-          ...employeeDetails.value,
-          first_name: employee.first_name,
-          middle_name: employee.middle_name,
-          last_name: employee.last_name,
-          gender: employee.gender,
-          date_of_birth: formatDate(employee.date_of_birth),
-          date_of_joining: formatDate(employee.date_of_joining),
-          employee_number: employee.employee_number,
-          status: employee.status
-        };
-        
-        // company info
-        companyInfo.value = {
-          ...companyInfo.value,
-          company: employee.company,
-          department: employee.department,
-          designation: employee.designation,
-          grade: employee.grade,
-          branch: employee.branch,
-          reports_to: employee.reports_to,
-        };
-      } else {
-        // Initialize with empty fields if no employee data
-        employeeDetailsFields.forEach(field => {
-          employeeDetails.value[field.key] = null;
-        });
-        
-        companyInfoFields.forEach(field => {
-          companyInfo.value[field.key] = null;
-        });
-      }
-      
-      // Initialize contact fields
-      contactInfoFields.forEach(field => {
-        contactInfo.value[field.key] = null;
-      });
-      
-      // Fetch contact information
-      try {
-        const contactResponse = await fetch('/api/method/frappe.client.get_list', {
+        // Fetch employee data for the current logged-in user
+        const employeeResponse = await fetch('/api/method/frappe.client.get_list', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            doctype: 'Contact',
-            filters: { user: userData.value.name },
+            doctype: 'Employee',
+            filters: { user_id: loggedUserEmail },
             fields: ['*']
           }),
         });
         
-        const contactDataResponse = await contactResponse.json();
+        const employeeDataResponse = await employeeResponse.json();
         
-        if (contactDataResponse.message?.[0]) {
-          const contact = contactDataResponse.message[0];
+        if (employeeDataResponse.message?.[0]) {
+          const employee = employeeDataResponse.message[0];
+          currentEmployeeData.value = employee;
           
-          //contact info
-          contactInfo.value = {
-            ...contactInfo.value,
-            email: contact.email_id,
-            phone: contact.phone,
-            mobile_no: contact.mobile_no,
-            company_name: contact.company_name,
+          // Initialize empty objects first
+          employeeDetailsFields.forEach(field => {
+            employeeDetails.value[field.key] = null;
+          });
+          
+          companyInfoFields.forEach(field => {
+            companyInfo.value[field.key] = null;
+          });
+          
+          // Populate employee details
+          employeeDetails.value = {
+            ...employeeDetails.value,
+            first_name: employee.first_name,
+            middle_name: employee.middle_name,
+            last_name: employee.last_name,
+            gender: employee.gender,
+            date_of_birth: formatDate(employee.date_of_birth),
+            date_of_joining: formatDate(employee.date_of_joining),
+            employee_number: employee.employee_number,
+            status: employee.status
           };
+          
+          // Populate company info
+          companyInfo.value = {
+            ...companyInfo.value,
+            company: employee.company,
+            department: employee.department,
+            designation: employee.designation,
+            grade: employee.grade,
+            branch: employee.branch,
+            reports_to: employee.reports_to,
+          };
+        } else {
+          // Initialize with empty fields if no employee data
+          employeeDetailsFields.forEach(field => {
+            employeeDetails.value[field.key] = null;
+          });
+          
+          companyInfoFields.forEach(field => {
+            companyInfo.value[field.key] = null;
+          });
         }
-      } catch (error) {
-        console.error('Error fetching contact data:', error);
+        
+        // Initialize contact fields
+        contactInfoFields.forEach(field => {
+          contactInfo.value[field.key] = null;
+        });
+        
+        // Fetch contact information for the current user
+        try {
+          const contactResponse = await fetch('/api/method/frappe.client.get_list', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              doctype: 'Contact',
+              filters: { user: loggedUserEmail },
+              fields: ['*']
+            }),
+          });
+          
+          const contactDataResponse = await contactResponse.json();
+          
+          if (contactDataResponse.message?.[0]) {
+            const contact = contactDataResponse.message[0];
+            
+            // Populate contact info
+            contactInfo.value = {
+              ...contactInfo.value,
+              email: contact.email_id,
+              phone: contact.phone,
+              mobile_no: contact.mobile_no,
+              company_name: contact.company_name,
+            };
+          }
+        } catch (error) {
+          console.error('Error fetching contact data:', error);
+        }
       }
     }
   } catch (error) {
